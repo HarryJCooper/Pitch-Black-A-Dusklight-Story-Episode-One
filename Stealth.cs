@@ -14,10 +14,9 @@ public class Stealth : MonoBehaviour
     AudioSource playerSource, enemySource;
 
     public AudioClip playerDetectedClip, enemyDetectedPlayerClip, enemyDetectedPlayerWarningClip, beepingClip;
-    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer;
-    float distanceFromPlayer, detectionTimer;
+    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer;
     bool hasTurnedOn, beingDetected;
-    public bool playerSprinting, playerCrouching, turnedOn;
+    public bool playerSprinting, playerCrouching, turnedOn, closeEnoughToAssassinate;
 
     private void Start(){
         playerSource = GameObject.Find("Player").GetComponent<AudioSource>();
@@ -40,6 +39,7 @@ public class Stealth : MonoBehaviour
             }
 
             playerSprinting = controls.sprint;
+            playerCrouching = controls.crouching;
             
             if (playerSprinting){
                 currentDetectionDistance = detectionDistance * 2;
@@ -51,9 +51,11 @@ public class Stealth : MonoBehaviour
 
             distanceFromPlayer = Vector3.Distance(playerSource.transform.position, enemySource.transform.position);
 
-            if (distanceFromPlayer < detectionDistance){
+            if (distanceFromPlayer < currentDetectionDistance){
                 PlayerIsHeard();
                 turnedOn = false;
+                controls.inStealth = false;
+                controls.inCombat = true;
             }
 
             ChangeEnemyAudio();
@@ -62,7 +64,7 @@ public class Stealth : MonoBehaviour
 
     IEnumerator DistanceFromEnemyBeep()
     {
-        yield return new WaitForSeconds(distanceFromPlayer / 10);
+        yield return new WaitForSeconds(distanceFromPlayer / 30);
         float lowpassFrequency = 200;
 
         if (enemyAngleToPlayer > 135){

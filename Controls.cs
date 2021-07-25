@@ -190,7 +190,8 @@ public class Controls : MonoBehaviour
         #region inStealth
         if (inStealth){
             inCombat = canZoom = false;
-            if (Input.GetKey(KeyCode.LeftControl)) crouching = true;
+            if (Input.GetKeyDown(KeyCode.LeftControl)) 
+                if (crouching) crouching = false; else crouching = true;
         }
         #endregion
 
