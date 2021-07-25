@@ -1,30 +1,20 @@
-﻿
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PBFootstepSystem : MonoBehaviour
 {
-    public AudioClip[] footTypeOne;
-    public AudioClip[] footsteps;
-    public GameObject[] sewerTiles;
-    public float walkDist;
-    public float maxDist;
-    public float moveSpeed, sprintMoveSpeed, initialMoveSpeed, initialFootstepDelay;
+    public AudioClip[] footTypeOne, footsteps;
+    public float walkDist, maxDist, moveSpeed, sprintMoveSpeed, initialMoveSpeed, initialFootstepDelay;
     public float rotSpeed, rotationTimer;
-    private Vector3 recentTransform;
-    private Vector3 Player;
-    public float fWallDist;
-    public float bWallDist;
-    public float maxWallDist;
+    private Vector3 recentTransform, Player;
+    public float fWallDist, bWallDist, maxWallDist;
     private float maxDistance = 200;
     public AudioSource footstepSound;
-    public bool raycastToWall;
-    public bool footstepsTypeOne;
-    public GameObject[] Ts;
+    public bool raycastToWall, footstepsTypeOne;
+    public GameObject[] Ts, sewerTiles;
     public Vector3 currentPos;
-    public bool canMove, firstLevel;
-    public bool moveForward;
+    public bool canMove, firstLevel, moveForward;
     public Controls controls;
 
     public bool canRotate = true;
@@ -46,14 +36,7 @@ public class PBFootstepSystem : MonoBehaviour
 
     void Update()
     {
-        if (controls.sprint)
-        {
-            moveSpeed = sprintMoveSpeed;
-        }
-        else
-        {
-            moveSpeed = initialMoveSpeed;
-        }
+        moveSpeed = controls.sprint ? sprintMoveSpeed : initialMoveSpeed; 
         
         Vector3 Origin = transform.position;
         Vector3 fDirection = transform.forward;

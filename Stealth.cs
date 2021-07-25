@@ -85,7 +85,7 @@ public class Stealth : MonoBehaviour
         }
         else
         {
-            if(lowpassFrequency > 200)
+            if (lowpassFrequency > 200)
             {
                 lowpassFrequency -= 10  * Time.deltaTime;
             }
@@ -99,7 +99,6 @@ public class Stealth : MonoBehaviour
 
     IEnumerator GetAngleTowardsPlayer()
     {
-        
         // Calculate the vector pointing from the enemy to the player
         Vector3 enemyDir = transform.position - playerSource.transform.position;
 
@@ -132,6 +131,4 @@ public class Stealth : MonoBehaviour
         playerSource.PlayOneShot(playerDetectedClip);
         enemySource.PlayOneShot(enemyDetectedClip);
     }
-
-
 }
