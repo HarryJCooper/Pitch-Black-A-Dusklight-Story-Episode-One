@@ -6,6 +6,7 @@ using UnityEngine.Audio;
 public class Combat : MonoBehaviour
 {
     IEnumerator playerCurrentAttack, enemyCurrentAttack;
+    [SerializeField] DarkVsLight darkVsLight;
 
     #region COMBAT BOOLS
     bool playerWillMiss, playerIsHit;
@@ -16,7 +17,8 @@ public class Combat : MonoBehaviour
     #endregion
 
     public float fastAttackWeighting, playersMaxAngleToParry, playersMaxAngleToMiss, enemyMaxAttackTimer, maxEnemyMoveAwayTimer, 
-        enemysMaxAngleToParry, maxDistanceSlowAttack, maxDistanceFastAttack, minDistanceFromPlayer, enemyPushPlayerDistance, playerKnockbackEnemyDistance;
+        enemysMaxAngleToParry, maxDistanceSlowAttack, maxDistanceFastAttack, minDistanceFromPlayer, enemyPushPlayerDistance, playerKnockbackEnemyDistance,
+        maxFightDistance = 30;
 
     float enemyAttackTimer, enemyMoveAwayTimer, enemyNewMoveAwayTimer, distanceFromPlayer, angleToEnemy;
 
@@ -295,6 +297,7 @@ public class Combat : MonoBehaviour
             }
             else if (playerSlowAttack || (enemyHealth < enemyDefensiveHealth))
             {
+                // ENEMY TRIES TO ESCAPE
                 transform.position = Vector3.MoveTowards(transform.position, playerSource.transform.position, -(enemyMoveSpeed / 2));
                 walkDist += Vector3.Distance(recentPosition, transform.position) * Time.deltaTime;
                 Debug.Log("playerSlowAttack Move");
@@ -636,11 +639,19 @@ public class Combat : MonoBehaviour
         }
     }
 
+    void CheckIfRanAway(){
+        if(Vector3.Distance(enemySource.transform.position, playerSource.transform.position) > maxFightDistance && controls.inCombat){
+            controls.inCombat = false;
+            darkVsLight.playerDarkness -= 1;
+        }
+    }
+
     void CheckIfDead()
     {
-        if (enemyHealth < 1)
+        if (enemyHealth < 1 && controls.inCombat)
         {
             enemySource.PlayOneShot(enemyBeenKilledClip);
+            darkVsLight.playerDarkness += 1;
             controls.inCombat = false;
         }
     }
@@ -649,7 +660,7 @@ public class Combat : MonoBehaviour
     {
         if (enemyHealth > (initialEnemyHealth * 0.66f))
         {
-            enemyBreathingClips = enemyBreathingHighHealthClips; // THIS WILL BE CHANGED WHEN HAVE DIFFERENT LEVELS OF BREATHING
+            enemyBreathingClips = enemyBreathingHighHealthClips; // REFACTOR - THIS WILL BE CHANGED WHEN HAVE DIFFERENT LEVELS OF BREATHING
         }
         else if (enemyHealth > (initialEnemyHealth * 0.33f))
         {
