@@ -22,36 +22,30 @@ public class Controls : MonoBehaviour
     #endregion
 
     // GENERAL MOVEMENT
-    public bool turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint;
+    public bool turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching;
     bool hold;
 
-    // CONTROL STATES
+    // CONTROL
     public bool inZoom, inCombat, inStealth, enteredZoom;
     
     // COMBAT
     public bool parry, fastAttack, slowAttack, quickRotateRight, quickRotateLeft;
 
-    public bool paused, enter;
+    public bool paused, enter, cutscenePlaying, allowPause;
     public float pauseTimer;
     public Vector3 touchPosition;
     public Touch touch;
     public Joystick joystick;
-    public float minDirection;
-    public float sprintModifier;
+    public float minDirection, sprintModifier;
     private float firstStepCounter;
-
-    public bool cutscenePlaying, allowPause;
 
     // REFACTOR - public ChooseDisplayImage chooseDisplayImage;
 
-    private void Awake()
-    {
+    private void Awake(){
         canZoom = false;
     }
 
-    private void Start()
-    {
-
+    private void Start(){
         if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
             || Application.platform == RuntimePlatform.WindowsEditor)
         {
@@ -65,22 +59,17 @@ public class Controls : MonoBehaviour
         }
     }
 
-    IEnumerator DoublePressStopper()
-    {
+    IEnumerator DoublePressStopper(){
         yield return new WaitForSeconds(0.1f);
         canPause = true;
     }
 
-    IEnumerator DoubleTapAndHold()
-    {
+    IEnumerator DoubleTapAndHold(){
         yield return new WaitForSeconds(0.15f);
-        if (hold)
-        {
+        if (hold){
             slowAttack = true;
             fastAttack = false;
-        }
-        else
-        {
+        } else {
             slowAttack = false;
             fastAttack = true;
         }
@@ -88,211 +77,135 @@ public class Controls : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetMouseButton(0) || Input.touchCount > 0 || Input.GetKey(KeyCode.Space))
-        {
+        if (Input.GetMouseButton(0) || Input.touchCount > 0 || Input.GetKey(KeyCode.Space)){
             hold = true;
-        }
-        else
-        {
+        } else {
             hold = false;
         }
-
         swipeUp = swipeDown = swipeLeft = swipeRight = tap = quickRotateLeft = quickRotateRight = false;
 
         #region Sprint
         // joystick.Vertical > sprintModifier
-        // BUG - Removed for first mobile build
+        // REFACTOR - Removed for first mobile build
 
-        if (doubleTap || Input.GetKeyDown(KeyCode.Space))
-        {
+        if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
             enter = true;
-        }
-        else
-        {
+        } else {
             enter = false;
         }
 
-        if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift))
-        {
+        if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
             sprint = true;
-        }
-        else
-        {
+        } else {
             sprint = false;
         }
         #endregion
 
         #region Movement Controls
         // REFACTOR - JOYSTICK CONTROLS
-        if (Input.GetKey(KeyCode.RightArrow))
-        {
+        if (Input.GetKey(KeyCode.RightArrow)){
             turnRight = true;
-        }
-        else
-        {
+        } else {
             turnRight = false;
         }
 
-        if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow))
-        {
+        if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow)){
             turnLeft = true;
-        }
-        else
-        {
+        } else {
             turnLeft = false;
         }
 
-        if ((joystick.Vertical > minDirection) || Input.GetKey(KeyCode.UpArrow))
-        {
+        if ((joystick.Vertical > minDirection) || Input.GetKey(KeyCode.UpArrow)){
             moveForward = true;
             firstStepCounter += Time.deltaTime;
-        }
-        else
-        {
+        } else {
             moveForward = false;
         }
 
-        if ((joystick.Vertical < -minDirection) || Input.GetKey(KeyCode.DownArrow))
-        {
+        if ((joystick.Vertical < -minDirection) || Input.GetKey(KeyCode.DownArrow)){
             moveBackward = true;
             firstStepCounter += Time.deltaTime;
-        }
-        else
-        {
+        } else {
             moveBackward = false;
         }
         #endregion
 
         #region First Step Forward 
-        if (!(joystick.Vertical > minDirection) && !(joystick.Vertical < -minDirection) && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow))
-        {
+        if (!(joystick.Vertical > minDirection) && !(joystick.Vertical < -minDirection) && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow)){
             firstStepCounter = 0;
         }
         
+        if (firstStepCounter < 0.1 && moveForward) firstMoveForward = true;
+        else firstMoveForward = false;
 
-        if (firstStepCounter < 0.1 && moveForward)
-        {
-            firstMoveForward = true;
-        }
-        else
-        {
-            firstMoveForward = false;
-        }
-
-        if (firstStepCounter < 0.1 && moveBackward)
-        {
-            firstMoveBackward = true;
-        }
-        else
-        {
-            firstMoveBackward = false;
-        }
+        if (firstStepCounter < 0.1 && moveBackward) firstMoveBackward = true;
+        else firstMoveBackward = false;
         #endregion
 
         #region Zoom
-        if (canZoom)
-        {
-            if (doubleTap || Input.GetKeyDown(KeyCode.Space))
-            {
+        if (canZoom){
+            if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
                 Debug.Log("inZoom");
                 enteredZoom = true;
                 inZoom = true;
-                if (mobile)
-                {
+                if (mobile) {
                     Handheld.Vibrate();
                 }
                 doubleTap = false;
-            }
-            else
-            {
+            } else {
                 enteredZoom = false;
             }
 
             // MOBILE
-
-            if (Input.touchCount == 1)
-            {
-                if (Input.GetTouch(0).phase == TouchPhase.Ended)
-                {
+            if (Input.touchCount == 1){
+                if (Input.GetTouch(0).phase == TouchPhase.Ended){
                     inZoom = false;
                     Debug.Log("exit Zoom");
-                    if (mobile)
-                    {
+                    if (mobile){
                         Handheld.Vibrate();
                     }
                 }
             }
 
             // COMPUTER
-            if (Input.GetKeyUp(KeyCode.Space))
-            {
+            if (Input.GetKeyUp(KeyCode.Space)){
                 inZoom = false;
                 Debug.Log("exit Zoom");
             }
         }
         #endregion
 
-        if (Input.GetKeyDown(KeyCode.C))
-        {
+        if (Input.GetKeyDown(KeyCode.C)){
             inCombat = true;
             StartCoroutine(GameObject.Find("Enemy").GetComponent<Combat>().EnemyMoveTowardsOrTaunt());
-
         }
-
 
         #region inCombat
-        if (inCombat)
-        {
+        if (inCombat){
             inStealth = canZoom = false;
-
-            if (swipeUp || Input.GetKeyDown(KeyCode.Return))
-            {
-                parry = true;
-            }
-
-            if (doubleTap || Input.GetKeyDown(KeyCode.Space))
-            {
-                StartCoroutine(DoubleTapAndHold());
-            }
-
-            if (swipeRight)
-            {
-                quickRotateLeft = true;
-            }
-            
-            if (swipeLeft)
-            {
-                quickRotateRight = true;
-            }
+            if (swipeUp || Input.GetKeyDown(KeyCode.Return)) parry = true;
+            if (doubleTap || Input.GetKeyDown(KeyCode.Space)) StartCoroutine(DoubleTapAndHold());
+            if (swipeRight) quickRotateLeft = true;
+            if (swipeLeft) quickRotateRight = true;
         }
-
-        if (inStealth)
-        {
-            inCombat = canZoom = false;
-        }
-
         #endregion
 
-        if (doubleTap)
-        {
-            doubleTap = false;
+        #region inStealth
+        if (inStealth){
+            inCombat = canZoom = false;
+            if (Input.GetKey(KeyCode.LeftControl)) crouching = true;
         }
+        #endregion
+
+        if (doubleTap) doubleTap = false;
 
         #region Pause
-        if (Input.touchCount == 2 && allowPause)
-        {
-            pauseTimer += Time.deltaTime;
-        }
-        else
-        {
-            pauseTimer = 0;
-        }
-
+        if (Input.touchCount == 2 && allowPause) pauseTimer += Time.deltaTime;
+        else pauseTimer = 0;
 
         // REFACTOR - All controls should be dictated by simple states, e.g. InCutscene, InMainGame. 
 
-        if ((pauseTimer > 1 || Input.GetKeyDown(KeyCode.Escape)) && !paused && canPause)
-        {
+        if ((pauseTimer > 1 || Input.GetKeyDown(KeyCode.Escape)) && !paused && canPause){
             Debug.Log("paused");
             paused = true;
             canZoom = false;
@@ -300,18 +213,17 @@ public class Controls : MonoBehaviour
             StartCoroutine(DoublePressStopper());
         }
 
-        if (paused && Input.GetKeyDown(KeyCode.Escape))
-        {
+        if (paused && Input.GetKeyDown(KeyCode.Escape)){
             Debug.Log("off Pause");
             pauseTimer = 0;
             paused = false;
             StartCoroutine(DoublePressStopper());
         }
-
         #endregion
 
         // OLD MOBILE CONTROLS
         #region MOBILE CONTROLS
+
 #if UNITY_EDITOR
         UpdateStandalone();
 #else
@@ -351,7 +263,6 @@ public class Controls : MonoBehaviour
             float y = swipeDelta.y;
             if (Mathf.Abs(x) > Mathf.Abs(y))
             {
-
                 if (x < 0)
                     swipeLeft = true;
                 else
@@ -411,6 +322,5 @@ public class Controls : MonoBehaviour
             startTouch = swipeDelta = Vector2.zero;
         }
     }
-
     #endregion MOBILE
 }

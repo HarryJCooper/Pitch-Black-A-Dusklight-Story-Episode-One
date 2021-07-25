@@ -13,7 +13,7 @@ public class Stealth : MonoBehaviour
     Controls controls;
     AudioSource playerSource, enemySource;
 
-    public AudioClip playerDetectedClip, enemyDetectedClip, enemyDetectedPlayerWarningClip, beepingClip;
+    public AudioClip playerDetectedClip, enemyDetectedPlayerClip, enemyDetectedPlayerWarningClip, beepingClip;
     public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer;
     float distanceFromPlayer, detectionTimer;
     bool hasTurnedOn, beingDetected;
@@ -129,6 +129,6 @@ public class Stealth : MonoBehaviour
         controls.inStealth = false;
         turnedOn = false;
         playerSource.PlayOneShot(playerDetectedClip);
-        enemySource.PlayOneShot(enemyDetectedClip);
+        enemySource.PlayOneShot(enemyDetectedPlayerClip);
     }
 }
