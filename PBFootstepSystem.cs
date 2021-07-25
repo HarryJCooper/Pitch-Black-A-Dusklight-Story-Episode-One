@@ -17,8 +17,6 @@ public class PBFootstepSystem : MonoBehaviour
     public Controls controls;
     bool initialFootstepAllow;
 
-
-
     void Start(){
         Player = transform.localPosition;
         if (footstepsTypeOne) footsteps = footTypeOne;

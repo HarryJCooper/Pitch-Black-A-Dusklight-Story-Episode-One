@@ -30,7 +30,6 @@ public class Controls : MonoBehaviour
     
     // COMBAT
     public bool parry, fastAttack, slowAttack, quickRotateRight, quickRotateLeft;
-
     public bool paused, enter, cutscenePlaying, allowPause;
     public float pauseTimer;
     public Vector3 touchPosition;
@@ -47,13 +46,11 @@ public class Controls : MonoBehaviour
 
     private void Start(){
         if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
-            || Application.platform == RuntimePlatform.WindowsEditor)
-        {
+            || Application.platform == RuntimePlatform.WindowsEditor){
             computer = true;
             mobile = false;
         }
-        if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
-        {
+        if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer){
             computer = false;
             mobile = true;
         }
