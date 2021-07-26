@@ -91,6 +91,7 @@ public class Stealth : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
         if (enemyAngleToPlayer > 135){
             beingDetected = true;
+            // REFACTOR controls.notMoving
             enemySource.PlayOneShot(enemyDetectedPlayerWarningClip);
         }
         StartCoroutine(GetAngleTowardsPlayer());

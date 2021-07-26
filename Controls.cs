@@ -22,7 +22,7 @@ public class Controls : MonoBehaviour
     #endregion
 
     // GENERAL MOVEMENT
-    public bool turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching;
+    public bool turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching, notMoving;
     bool hold;
 
     // CONTROL
@@ -125,6 +125,12 @@ public class Controls : MonoBehaviour
         } else {
             moveBackward = false;
         }
+
+        if (!Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow) && computer) notMoving = true; 
+        else notMoving = false;
+        if (Input.touchCount == 0 && mobile) notMoving = true;
+        else notMoving = false;
+            
         #endregion
 
         #region First Step Forward 
