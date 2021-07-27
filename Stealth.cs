@@ -13,9 +13,12 @@ public class Stealth : MonoBehaviour
     Controls controls;
     AudioSource playerSource, enemySource;
 
-    public AudioClip playerDetectedClip, enemyDetectedPlayerClip, enemyDetectedPlayerWarningClip, beepingClip;
-    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer;
-    bool hasTurnedOn, beingDetected;
+    public AudioClip playerFoundClip, enemyFoundPlayerClip, enemyDetectedPlayerClip, beepingClip;
+    public AudioClip[] playerDetectedCountDownClips;
+    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer, maxDetectionTime;
+    float lowpassFrequency = 200;
+    int playerDetectedClipCounter = 0;
+    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed;
     public bool playerSprinting, playerCrouching, turnedOn, closeEnoughToAssassinate;
 
     private void Start(){
@@ -33,7 +36,7 @@ public class Stealth : MonoBehaviour
 
         if (turnedOn){
             if (!hasTurnedOn){
-                StartCoroutine(DistanceFromEnemyBeep());
+                StartCoroutine(DistanceFromEnemySignifier());
                 StartCoroutine(GetAngleTowardsPlayer());
                 hasTurnedOn = true;
             }
@@ -51,22 +54,12 @@ public class Stealth : MonoBehaviour
 
             distanceFromPlayer = Vector3.Distance(playerSource.transform.position, enemySource.transform.position);
 
-            if (distanceFromPlayer < currentDetectionDistance){
-                PlayerIsHeard();
-                turnedOn = false;
-                controls.inStealth = false;
-                controls.inCombat = true;
-            }
-
-            ChangeEnemyAudio();
+            CheckIfDetected();
         }
     }
 
-    IEnumerator DistanceFromEnemyBeep()
-    {
-        yield return new WaitForSeconds(distanceFromPlayer / 30);
-        float lowpassFrequency = 200;
-
+    IEnumerator DistanceFromEnemySignifier(){
+        yield return new WaitForSeconds(distanceFromPlayer / 30); 
         if (enemyAngleToPlayer > 135){
             if (lowpassFrequency < 5000){
                 lowpassFrequency += 10 * Time.deltaTime;
@@ -74,38 +67,51 @@ public class Stealth : MonoBehaviour
             lowpassFrequency -= 10  * Time.deltaTime;
             }
         }
-        
+        if (distanceFromPlayer < currentDetectionDistance) beingDetected = true; else beingDetected = false;
+
         enemyMixer.SetFloat("EnemyBeepLowpassFreq", lowpassFrequency);
         enemySource.PlayOneShot(beepingClip);
         
-        StartCoroutine(DistanceFromEnemyBeep());
+        StartCoroutine(DistanceFromEnemySignifier());
     }
 
-    IEnumerator GetAngleTowardsPlayer()
-    {
+    IEnumerator GetAngleTowardsPlayer(){
         // Calculate the vector pointing from the enemy to the player
         Vector3 enemyDir = transform.position - playerSource.transform.position;
 
         // Calculate the angle between the forward vector of the player and the vector pointing to the enemy
         enemyAngleToPlayer = Vector3.Angle(transform.forward, enemyDir);
         yield return new WaitForSeconds(0.1f);
-        if (enemyAngleToPlayer > 135){
-            beingDetected = true;
-            // REFACTOR controls.notMoving
-            enemySource.PlayOneShot(enemyDetectedPlayerWarningClip);
-        }
         StartCoroutine(GetAngleTowardsPlayer());
     }
 
-    void ChangeEnemyAudio(){
-        if (beingDetected) detectionTimer += Time.deltaTime;
+    void CheckIfDetected(){
+        if (beingDetected){
+            detectionTimer += Time.deltaTime;
+            PlayerIsHeard();
+        } else {
+            beingDetectedClipPlayed = false;
+            playerDetectedClipCounter = 0;
+        }
+        if (detectionTimer > maxDetectionTime || distanceFromPlayer < currentDetectionDistance * 0.5f) PlayerIsFound();
     }
 
     void PlayerIsHeard(){
+        if (!beingDetectedClipPlayed){ 
+            enemySource.PlayOneShot(enemyDetectedPlayerClip);
+            beingDetectedClipPlayed = true;
+        }
+        if (beingDetected && !playerSource.isPlaying){ // REFACTOR - could use a coroutine here.
+            playerSource.PlayOneShot(playerDetectedCountDownClips[playerDetectedClipCounter]);
+            playerDetectedClipCounter += 1;    
+        }
+    }
+
+    void PlayerIsFound(){
         controls.inCombat = true;
         controls.inStealth = false;
         turnedOn = false;
-        playerSource.PlayOneShot(playerDetectedClip);
-        enemySource.PlayOneShot(enemyDetectedPlayerClip);
+        playerSource.PlayOneShot(playerFoundClip);
+        enemySource.PlayOneShot(enemyFoundPlayerClip);
     }
 }
