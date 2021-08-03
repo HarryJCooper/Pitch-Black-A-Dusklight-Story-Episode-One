@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Controls : MonoBehaviour
 {
+
+
     [SerializeField] private float doubleTapDelta = 0.5f;
 
     public bool canZoom, tap, doubleTap, swipeLeft, swipeRight, swipeUp, swipeDown;

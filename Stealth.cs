@@ -14,11 +14,11 @@ public class Stealth : MonoBehaviour
     AudioSource playerSource, enemySource;
 
     public AudioClip playerFoundClip, enemyFoundPlayerClip, enemyDetectedPlayerClip, beepingClip;
-    public AudioClip[] playerDetectedCountDownClips;
+    [SerializeField] AudioClip[] playerDetectedCountDownClips, enemyBreathingClips;
     public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer, maxDetectionTime;
     float lowpassFrequency = 200;
     int playerDetectedClipCounter = 0;
-    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed;
+    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed, enemyFacingAway;
     public bool playerSprinting, playerCrouching, turnedOn, closeEnoughToAssassinate;
 
     private void Start(){
@@ -29,18 +29,14 @@ public class Stealth : MonoBehaviour
     }
 
     private void Update(){ 
-        if (Input.GetKeyDown(KeyCode.X)){ // REFACTOR - this is temporary
+        if (Input.GetKeyDown(KeyCode.X) && !turnedOn){ // REFACTOR - this is temporary
             turnedOn = true;
             controls.inStealth = true;
+            StartCoroutine(RepeatEnemyBreathing());
+            StartCoroutine(DistanceFromEnemySignifier());
+            StartCoroutine(GetAngleTowardsPlayer());
         }
-
         if (turnedOn){
-            if (!hasTurnedOn){
-                StartCoroutine(DistanceFromEnemySignifier());
-                StartCoroutine(GetAngleTowardsPlayer());
-                hasTurnedOn = true;
-            }
-
             playerSprinting = controls.sprint;
             playerCrouching = controls.crouching;
             
@@ -54,22 +50,18 @@ public class Stealth : MonoBehaviour
 
             distanceFromPlayer = Vector3.Distance(playerSource.transform.position, enemySource.transform.position);
 
+
             CheckIfDetected();
         }
     }
 
     IEnumerator DistanceFromEnemySignifier(){
         yield return new WaitForSeconds(distanceFromPlayer / 30); 
-        if (enemyAngleToPlayer > 135){
-            if (lowpassFrequency < 5000){
-                lowpassFrequency += 10 * Time.deltaTime;
-            } else if (lowpassFrequency > 200) {
-            lowpassFrequency -= 10  * Time.deltaTime;
-            }
-        }
+        lowpassFrequency = (float)enemyAngleToPlayer * 10f;
         if (distanceFromPlayer < currentDetectionDistance) beingDetected = true; else beingDetected = false;
 
-        enemyMixer.SetFloat("EnemyBeepLowpassFreq", lowpassFrequency);
+        enemyMixer.SetFloat("EnemyLowpassFreq", lowpassFrequency);
+        Debug.Log(lowpassFrequency);
         enemySource.PlayOneShot(beepingClip);
         
         StartCoroutine(DistanceFromEnemySignifier());
@@ -81,6 +73,7 @@ public class Stealth : MonoBehaviour
 
         // Calculate the angle between the forward vector of the player and the vector pointing to the enemy
         enemyAngleToPlayer = Vector3.Angle(transform.forward, enemyDir);
+        if (enemyAngleToPlayer < 100) enemyFacingAway = true;
         yield return new WaitForSeconds(0.1f);
         StartCoroutine(GetAngleTowardsPlayer());
     }
@@ -93,7 +86,7 @@ public class Stealth : MonoBehaviour
             beingDetectedClipPlayed = false;
             playerDetectedClipCounter = 0;
         }
-        if (detectionTimer > maxDetectionTime || distanceFromPlayer < currentDetectionDistance * 0.5f) PlayerIsFound();
+        if (detectionTimer > maxDetectionTime || (distanceFromPlayer < currentDetectionDistance * 0.5f && !enemyFacingAway)) StartCoroutine(PlayerIsFound());
     }
 
     void PlayerIsHeard(){
@@ -107,11 +100,18 @@ public class Stealth : MonoBehaviour
         }
     }
 
-    void PlayerIsFound(){
+    IEnumerator PlayerIsFound(){
         controls.inCombat = true;
         controls.inStealth = false;
         turnedOn = false;
-        playerSource.PlayOneShot(playerFoundClip);
         enemySource.PlayOneShot(enemyFoundPlayerClip);
+        yield return new WaitForSeconds(enemyFoundPlayerClip.length);
+        playerSource.PlayOneShot(playerFoundClip);
+    }
+
+    IEnumerator RepeatEnemyBreathing(){
+        enemySource.PlayOneShot(enemyBreathingClips[Random.Range(0, enemyBreathingClips.Length)]);
+        yield return new WaitForSeconds(enemyBreathingClips[0].length);
+        StartCoroutine(RepeatEnemyBreathing());
     }
 }
