@@ -113,7 +113,7 @@ public class Stealth : MonoBehaviour
 
     void CheckIfAssassinate(){
         if (canAssassinate && (controls.doubleTap || Input.GetKeyDown(KeyCode.Space))){
-            StartCoroutine(EnemyAssinated());
+            StartCoroutine(EnemyAssassinated());
         }
     }
 
@@ -135,7 +135,7 @@ public class Stealth : MonoBehaviour
     IEnumerator EnemyAssassinated(){
         // REFACTOR - Test this
         playerSource.PlayOneShot(playerAssassinatedEnemyClip); 
-        yield return new WaitForSeconds(playerAssassinateEnemyClip.length);
+        yield return new WaitForSeconds(playerAssassinatedEnemyClip.length);
         enemySource.PlayOneShot(enemyAssassinatedByPlayerClip); 
         yield return new WaitForSeconds(enemyAssassinatedByPlayerClip.length);
     }
