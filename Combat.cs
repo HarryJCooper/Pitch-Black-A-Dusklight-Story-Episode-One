@@ -658,16 +658,11 @@ public class Combat : MonoBehaviour
 
     IEnumerator RepeatEnemyBreathing()
     {
-        if (enemyHealth > (initialEnemyHealth * 0.66f))
-        {
+        if (enemyHealth > (initialEnemyHealth * 0.66f)){
             enemyBreathingClips = enemyBreathingHighHealthClips; // REFACTOR - THIS WILL BE CHANGED WHEN HAVE DIFFERENT LEVELS OF BREATHING
-        }
-        else if (enemyHealth > (initialEnemyHealth * 0.33f))
-        {
+        } else if (enemyHealth > (initialEnemyHealth * 0.33f)){
             enemyBreathingClips = enemyBreathingMidHealthClips;
-        }
-        else if (enemyHealth > 0)
-        {
+        } else if (enemyHealth > 0){
             enemyBreathingClips = enemyBreathingLowHealthClips;
         }
         enemySource.PlayOneShot(enemyBreathingClips[Random.Range(0, enemyBreathingClips.Length)]);

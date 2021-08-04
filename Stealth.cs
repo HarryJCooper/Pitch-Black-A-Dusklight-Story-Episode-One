@@ -13,13 +13,13 @@ public class Stealth : MonoBehaviour
     Controls controls;
     AudioSource playerSource, enemySource;
 
-    public AudioClip playerFoundClip, enemyFoundPlayerClip, enemyDetectedPlayerClip, beepingClip;
+    [SerializeField] AudioClip playerFoundClip, enemyFoundPlayerClip, enemyDetectedPlayerClip, beepingClip, playerAssassinatedEnemyClip, enemyAssassinatedByPlayerClip;
     [SerializeField] AudioClip[] playerDetectedCountDownClips, enemyBreathingClips;
-    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer, maxDetectionTime;
+    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer, maxDetectionTime, maxAssinateDistance = 2;
     float lowpassFrequency = 200;
     int playerDetectedClipCounter = 0;
-    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed, enemyFacingAway;
-    public bool playerSprinting, playerCrouching, turnedOn, closeEnoughToAssassinate;
+    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed, enemyFacingAway, canAssassinate;
+    public bool playerSprinting, playerCrouching, turnedOn;
 
     private void Start(){
         playerSource = GameObject.Find("Player").GetComponent<AudioSource>();
@@ -37,7 +37,14 @@ public class Stealth : MonoBehaviour
             StartCoroutine(GetAngleTowardsPlayer());
         }
         if (turnedOn){
-            playerSprinting = controls.sprint;
+            DetectionDistanceModifier();
+            CheckIfDetected();
+            CheckIfCanAssassinate();
+        }
+    }
+
+    void DetectionDistanceModifier(){
+        playerSprinting = controls.sprint;
             playerCrouching = controls.crouching;
             
             if (playerSprinting){
@@ -49,10 +56,6 @@ public class Stealth : MonoBehaviour
             }
 
             distanceFromPlayer = Vector3.Distance(playerSource.transform.position, enemySource.transform.position);
-
-
-            CheckIfDetected();
-        }
     }
 
     IEnumerator DistanceFromEnemySignifier(){
@@ -85,7 +88,7 @@ public class Stealth : MonoBehaviour
         } else {
             beingDetectedClipPlayed = false;
             playerDetectedClipCounter = 0;
-        }
+        } // LOOK AT ME! MAKE IT SO THAT YOU HAVE TO BE CROUCHING TO ASSASSINATE
         if (detectionTimer > maxDetectionTime || (distanceFromPlayer < currentDetectionDistance * 0.5f && !enemyFacingAway)) StartCoroutine(PlayerIsFound());
     }
 
@@ -97,6 +100,20 @@ public class Stealth : MonoBehaviour
         if (beingDetected && !playerSource.isPlaying){ // REFACTOR - could use a coroutine here.
             playerSource.PlayOneShot(playerDetectedCountDownClips[playerDetectedClipCounter]);
             playerDetectedClipCounter += 1;    
+        }
+    }
+
+    void CheckIfCanAssassinate(){
+        if (playerCrouching && distanceFromPlayer < maxAssinateDistance && enemyFacingAway){
+            canAssassinate = true;
+        } else {
+            canAssassinate = false;
+        }
+    }
+
+    void CheckIfAssassinate(){
+        if (canAssassinate && (controls.doubleTap || Input.GetKeyDown(KeyCode.Space))){
+            StartCoroutine(EnemyAssinated());
         }
     }
 
@@ -113,5 +130,13 @@ public class Stealth : MonoBehaviour
         enemySource.PlayOneShot(enemyBreathingClips[Random.Range(0, enemyBreathingClips.Length)]);
         yield return new WaitForSeconds(enemyBreathingClips[0].length);
         StartCoroutine(RepeatEnemyBreathing());
+    }
+
+    IEnumerator EnemyAssassinated(){
+        // REFACTOR - Test this
+        playerSource.PlayOneShot(playerAssassinatedEnemyClip); 
+        yield return new WaitForSeconds(playerAssassinateEnemyClip.length);
+        enemySource.PlayOneShot(enemyAssassinatedByPlayerClip); 
+        yield return new WaitForSeconds(enemyAssassinatedByPlayerClip.length);
     }
 }
