@@ -89,6 +89,7 @@ public class Controls : MonoBehaviour
 
         if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
             enter = true;
+            Debug.Log("has pressed space");
         } else {
             enter = false;
         }
