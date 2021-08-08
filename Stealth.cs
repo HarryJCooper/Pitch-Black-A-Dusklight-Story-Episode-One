@@ -15,11 +15,11 @@ public class Stealth : MonoBehaviour
 
     [SerializeField] AudioClip playerFoundClip, enemyFoundPlayerClip, enemyDetectedPlayerClip, beepingClip, playerAssassinatedEnemyClip, enemyAssassinatedByPlayerClip;
     [SerializeField] AudioClip[] playerDetectedCountDownClips, enemyBreathingClips;
-    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer, maxDetectionTime, maxAssinateDistance = 2;
+    public float currentDetectionDistance, detectionDistance, enemyAngleToPlayer, distanceFromPlayer, detectionTimer, maxDetectionTime, maxAssassinateDistance = 5;
     float lowpassFrequency = 200;
     int playerDetectedClipCounter = 0;
-    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed, enemyFacingAway, canAssassinate;
-    public bool playerSprinting, playerCrouching, turnedOn;
+    bool hasTurnedOn, beingDetected, beingDetectedClipPlayed, enemyFacingAway;
+    public bool playerSprinting, playerCrouching, turnedOn, hasBeenTurnedOn = false, canAssassinate;
 
     private void Start(){
         playerSource = GameObject.Find("Player").GetComponent<AudioSource>();
@@ -29,8 +29,9 @@ public class Stealth : MonoBehaviour
     }
 
     private void Update(){ 
-        if (Input.GetKeyDown(KeyCode.X) && !turnedOn){ // REFACTOR - this is temporary
+        if (Input.GetKeyDown(KeyCode.X) && !turnedOn && !hasBeenTurnedOn){ // REFACTOR - this is temporary
             turnedOn = true;
+            hasBeenTurnedOn = true;
             controls.inStealth = true;
             StartCoroutine(RepeatEnemyBreathing());
             StartCoroutine(DistanceFromEnemySignifier());
@@ -66,8 +67,11 @@ public class Stealth : MonoBehaviour
         enemyMixer.SetFloat("EnemyLowpassFreq", lowpassFrequency);
         Debug.Log(lowpassFrequency);
         enemySource.PlayOneShot(beepingClip);
-        
-        StartCoroutine(DistanceFromEnemySignifier());
+        if(turnedOn){
+            StartCoroutine(DistanceFromEnemySignifier());
+        } else {
+            lowpassFrequency = 20000;
+        }
     }
 
     IEnumerator GetAngleTowardsPlayer(){
@@ -88,6 +92,7 @@ public class Stealth : MonoBehaviour
         } else {
             beingDetectedClipPlayed = false;
             playerDetectedClipCounter = 0;
+            detectionTimer = 0;
         } // LOOK AT ME! MAKE IT SO THAT YOU HAVE TO BE CROUCHING TO ASSASSINATE
         if (detectionTimer > maxDetectionTime || (distanceFromPlayer < currentDetectionDistance * 0.5f && !enemyFacingAway)) StartCoroutine(PlayerIsFound());
     }
@@ -99,12 +104,13 @@ public class Stealth : MonoBehaviour
         }
         if (beingDetected && !playerSource.isPlaying){ // REFACTOR - could use a coroutine here.
             playerSource.PlayOneShot(playerDetectedCountDownClips[playerDetectedClipCounter]);
-            playerDetectedClipCounter += 1;    
+            playerDetectedClipCounter += 1; 
+            Debug.Log(playerDetectedClipCounter);   
         }
     }
 
     void CheckIfCanAssassinate(){
-        if (playerCrouching && distanceFromPlayer < maxAssinateDistance && enemyFacingAway){
+        if (playerCrouching && distanceFromPlayer < maxAssassinateDistance && enemyFacingAway){
             canAssassinate = true;
         } else {
             canAssassinate = false;
@@ -119,6 +125,7 @@ public class Stealth : MonoBehaviour
 
     IEnumerator PlayerIsFound(){
         controls.inCombat = true;
+        StartCoroutine(this.GetComponent<Combat>().EnemyMoveTowardsOrTaunt());
         controls.inStealth = false;
         turnedOn = false;
         enemySource.PlayOneShot(enemyFoundPlayerClip);

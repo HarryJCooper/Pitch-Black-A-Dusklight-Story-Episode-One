@@ -71,75 +71,54 @@ public class Combat : MonoBehaviour
 
     void Update()
     {
-        if (controls.inCombat)
-        {
+        if (controls.inCombat){
             #region GET PLAYER INPUT
-            if (controls.fastAttack)
-            {
+            if (controls.fastAttack){
                 controls.fastAttack = false;
-                if (!playerStunned && !playerAttacking)
-                {
+                if (!playerStunned && !playerAttacking){
                     playerAttacking = true;
                     playerCurrentAttack = PlayerFastAttack();
                     StartCoroutine(playerCurrentAttack);   
-                }
-                else if (playerStunned && !playerAttacking)
-                {
+                } else if (playerStunned && !playerAttacking){
                     playerSource.PlayOneShot(playerTryToAttackWhenStunnedClip);
                     Debug.Log("Player Fast Attack Fail");
-                }
-                else
-                {
+                } else {
                     Debug.Log("Can't currently attack as currently attacking");
                 }
             }
 
-            if (controls.slowAttack)
-            {
+            if (controls.slowAttack){
                 controls.slowAttack = false;
-                if (!playerStunned && !playerAttacking)
-                {
+                if (!playerStunned && !playerAttacking){
                     playerAttacking = true;
                     playerCurrentAttack = PlayerSlowAttack();
                     StartCoroutine(playerCurrentAttack);
-                }
-                else if (playerStunned && !playerAttacking)
-                {
+                } else if (playerStunned && !playerAttacking){
                     playerSource.PlayOneShot(playerTryToAttackWhenStunnedClip);
                     Debug.Log("Player Slow Attack Fail");
-                }
-                else
-                {
+                } else {
                     Debug.Log("Can't currently attack as currently attacking");
                 }
             }
 
-            if (controls.parry)
-            {
+            if (controls.parry){
                 controls.parry = false;
                 if ((angleToEnemy > playersMaxAngleToParry) && (distanceFromPlayer < maxDistanceFastAttack) && 
-                    !playerStunned && !playerAttacking && enemyAttacking)
-                {
+                    !playerStunned && !playerAttacking && enemyAttacking){
                     playerCanParry = true;
-                }
-                else
-                {
+                } else {
                     playerCanParry = false;
                 }
 
-                if (playerCanParry)
-                {
+                if (playerCanParry){
                     StartCoroutine(EnemyBeenParried());
-                }
-                else if (!playerCanParry)
-                {
+                } else if (!playerCanParry){
                     StartCoroutine(PlayerMissedParry());
                 }
             }
             #endregion
 
-            if (playerAttacking && playerIsHit)
-            {
+            if (playerAttacking && playerIsHit){
                 StopCoroutine(playerCurrentAttack);
                 playerIsHit = false;
                 playerAttacking = false;
@@ -154,13 +133,11 @@ public class Combat : MonoBehaviour
         }
     }
 
-    public IEnumerator EnemyMoveTowardsOrTaunt()
-    {
+    public IEnumerator EnemyMoveTowardsOrTaunt(){
         float aggressionTest = Random.Range(0, 100);
         Debug.Log(aggressionTest);
 
-        if ((aggressionTest < (enemyTemper + enemyTemperModifier)) && (distanceFromPlayer > (maxDistanceSlowAttack * 3)))
-        {
+        if ((aggressionTest < (enemyTemper + enemyTemperModifier)) && (distanceFromPlayer > (maxDistanceSlowAttack * 3))){
             Debug.Log("EnemyMoveTowardsOrTaunt Enemy Taunting");
             enemyCanMove = false;
             enemyTemperModifier += 10;
@@ -168,16 +145,13 @@ public class Combat : MonoBehaviour
             yield return new WaitForSeconds(enemyTauntClip.length);
             StartCoroutine(MoveTowardsPlayer());
             yield break;
-        }
-        else
-        {
+        } else {
             StartCoroutine(MoveTowardsPlayer());
             yield break;
         }
     }
 
-    IEnumerator MoveTowardsPlayer()
-    {
+    IEnumerator MoveTowardsPlayer(){
         enemyCanMove = true;
         EnemyAttackDecider();
         yield break;
@@ -196,42 +170,34 @@ public class Combat : MonoBehaviour
         playedEnemyInRange = false;
     }
 
-    void StartEnemyAttack()
-    {
+    void StartEnemyAttack(){
         enemyAttackTimer -= Time.deltaTime;
-        if (!enemyAttacking && (distanceFromPlayer < minDistanceFromPlayer) && enemyAttackTimer < 0)
-        {
+        if (!enemyAttacking && (distanceFromPlayer < minDistanceFromPlayer) && enemyAttackTimer < 0){
             EnemyAttackDecider();
             enemyAttackTimer = enemyMaxAttackTimer;
         }
     }
 
-    void EnemyAttackDecider()
-    {
+    void EnemyAttackDecider(){
         Debug.Log("EnemyAttackDecider");
 
-        if (!enemyBeenParried && !enemyAttacking)
-        {
-            if (playerSlowAttack && (distanceFromPlayer < maxDistanceFastAttack))
-            {
+        if (!enemyBeenParried && !enemyAttacking){
+            if (playerSlowAttack && (distanceFromPlayer < maxDistanceFastAttack)){
                 enemyCurrentAttack = EnemyFastAttack();
                 StartCoroutine(enemyCurrentAttack);
                 enemySource.PlayOneShot(enemyFastAttackClip);
                 Debug.Log("Enemy Fast Attack because Player Slow Attack");
             }
 
-            if (distanceFromPlayer < maxDistanceFastAttack)
-            {
+            if (distanceFromPlayer < maxDistanceFastAttack){
                 float fastAttackOrPush = Random.Range(0, 100);
-                if (fastAttackOrPush < fastAttackWeighting)
-                {
+                if (fastAttackOrPush < fastAttackWeighting){
                     enemyCurrentAttack = EnemyFastAttack();
                     StartCoroutine(enemyCurrentAttack);
                     enemySource.PlayOneShot(enemyFastAttackClip);
                     Debug.Log("Enemy Fast Attack because Close Enough");
                 }
-                else
-                {
+                else {
                     enemyCurrentAttack = EnemyPush();
                     StartCoroutine(enemyCurrentAttack);
                     enemySource.PlayOneShot(enemyPushClip);
@@ -239,46 +205,37 @@ public class Combat : MonoBehaviour
                 }
             }
 
-            if (distanceFromPlayer > maxDistanceFastAttack && distanceFromPlayer < maxDistanceSlowAttack)
-            {
+            if (distanceFromPlayer > maxDistanceFastAttack && distanceFromPlayer < maxDistanceSlowAttack){
                 enemyCurrentAttack = EnemySlowAttack();
                 StartCoroutine(enemyCurrentAttack);
                 enemySource.PlayOneShot(enemySlowAttackClip);
             }
 
-            if (distanceFromPlayer > (maxDistanceSlowAttack * 2))
-            {
+            if (distanceFromPlayer > (maxDistanceSlowAttack * 2)){
                 enemyCurrentAttack = EnemyTaunt();
                 StartCoroutine(enemyCurrentAttack);
             }
         }
     }
     
-    void EnemyMovement()
-    {
+    void EnemyMovement(){
         float enemyMoveSpeed = Time.deltaTime * moveSpeedMultiplier;
         float enemyRotationSpeed = Time.deltaTime * rotateSpeedMultiplier;
 
         // ENEMY MOVES TO THE SIDE WHEN FAST ATTACKING, AND WHEN THE PLAYER ATTACKS
 
         #region SPRINT CHECK
-        if (distanceFromPlayer > (2f * maxDistanceSlowAttack))
-        {
+        if (distanceFromPlayer > (2f * maxDistanceSlowAttack)){
             moveSpeedMultiplier = sprintSpeedMultiplier;
-        }
-        else
-        {
+        } else {
             moveSpeedMultiplier = initialSpeedMultiplier;
         }
         #endregion
 
-        if (enemyCanMove)
-        {
+        if (enemyCanMove) {
             #region MOVE FRONT AND BACK
-            if (enemyMoveAway)
-            {
-                if (!enemyMoveAwayTimePicked)
-                {
+            if (enemyMoveAway){
+                if (!enemyMoveAwayTimePicked){
                     enemyNewMoveAwayTimer = Random.Range(maxEnemyMoveAwayTimer + (maxEnemyMoveAwayTimer / 5), 
                                                          maxEnemyMoveAwayTimer - (maxEnemyMoveAwayTimer / 5));
                     Debug.Log(enemyNewMoveAwayTimer);
@@ -288,22 +245,17 @@ public class Combat : MonoBehaviour
                 walkDist += Vector3.Distance(recentPosition, transform.position) * Time.deltaTime;
                 Debug.Log("Enemy Move Away After Being Hit");
                 enemyMoveAwayTimer += Time.deltaTime;
-                if (enemyMoveAwayTimer > enemyNewMoveAwayTimer)
-                {
+                if (enemyMoveAwayTimer > enemyNewMoveAwayTimer){
                     enemyMoveAwayTimePicked = false;
                     enemyMoveAway = false;
                     enemyMoveAwayTimer = 0;
                 }
-            }
-            else if (playerSlowAttack || (enemyHealth < enemyDefensiveHealth))
-            {
+            } else if (playerSlowAttack || (enemyHealth < enemyDefensiveHealth)){
                 // ENEMY TRIES TO ESCAPE
                 transform.position = Vector3.MoveTowards(transform.position, playerSource.transform.position, -(enemyMoveSpeed / 2));
                 walkDist += Vector3.Distance(recentPosition, transform.position) * Time.deltaTime;
                 Debug.Log("playerSlowAttack Move");
-            }
-            else if ((distanceFromPlayer > minDistanceFromPlayer) && !playerSlowAttack)
-            {
+            } else if ((distanceFromPlayer > minDistanceFromPlayer) && !playerSlowAttack){
                 transform.position = Vector3.MoveTowards(transform.position, playerSource.transform.position, enemyMoveSpeed);
                 walkDist += Vector3.Distance(recentPosition, transform.position) * Time.deltaTime;
                 Debug.Log("Enemy Move Towards Player");
@@ -311,12 +263,9 @@ public class Combat : MonoBehaviour
             #endregion
 
             #region MOVE LEFT OR RIGHT CHECK
-            if (distanceFromPlayer < (maxDistanceFastAttack * 2) && (angleToEnemy > 90))
-            {
+            if (distanceFromPlayer < (maxDistanceFastAttack * 2) && (angleToEnemy > 90)){
                 closeEnoughToMoveLeftOrRight = true;
-            }
-            else
-            {
+            } else {
                 closeEnoughToMoveLeftOrRight = false;
                 moveToTheSideTimer = 0;
             }
@@ -324,20 +273,15 @@ public class Combat : MonoBehaviour
 
             #region MOVE LEFT OR RIGHT
 
-            if (closeEnoughToMoveLeftOrRight)
-            {
+            if (closeEnoughToMoveLeftOrRight){
                 moveToTheSideTimer += Time.deltaTime;
 
-                if ((moveToTheSideTimer > minMoveToTheSideTimer) && (moveToTheSideTimer < maxMoveToTheSideTimer))
-                {
-                    if (leftOrRight > 49)
-                    {
+                if ((moveToTheSideTimer > minMoveToTheSideTimer) && (moveToTheSideTimer < maxMoveToTheSideTimer)){
+                    if (leftOrRight > 49){
                         transform.position += transform.right * moveToTheSideMultiplier;
                         walkDist += Vector3.Distance(recentPosition, transform.position) * Time.deltaTime;
                         Debug.Log("moving to the right");
-                    }
-                    else if (leftOrRight <= 49)
-                    {
+                    } else if (leftOrRight <= 49){
                         transform.position -= transform.right * moveToTheSideMultiplier;
                         walkDist += Vector3.Distance(recentPosition, transform.position) * Time.deltaTime;
                         Debug.Log("moving to the left");
@@ -345,8 +289,7 @@ public class Combat : MonoBehaviour
                     Debug.Log("moving to the side");
                 }
 
-                if (moveToTheSideTimer > maxMoveToTheSideTimer)
-                {
+                if (moveToTheSideTimer > maxMoveToTheSideTimer){
                     leftOrRight = Random.Range(0, 100);
                     Debug.Log(leftOrRight);
                     moveToTheSideTimer = 0;
@@ -355,20 +298,16 @@ public class Combat : MonoBehaviour
             #endregion
 
             #region TURN TO FACE ENEMY
-            if (angleToEnemy < 180)
-            {
+            if (angleToEnemy < 180){
                 Vector3 targetDirection = playerSource.transform.position - transform.position;
-
                 Vector3 newDirection = Vector3.RotateTowards(transform.forward, targetDirection, enemyRotationSpeed, 0.0f);
-
                 transform.rotation = Quaternion.LookRotation(newDirection);
             }
             #endregion
         }
 
         #region ENEMY FOOTSTEPS
-        if (walkDist > maxDist)
-        {
+        if (walkDist > maxDist){
             enemyFootstepSource.PlayOneShot(footstepClips[Random.Range(0, footstepClips.Length)], Random.Range(0.8f, 1f));
             walkDist = 0;
             recentPosition = transform.position;
@@ -377,16 +316,14 @@ public class Combat : MonoBehaviour
     }
 
     #region ATTACKS, TAUNT AND PARRIES
-    IEnumerator PlayerFastAttack()
-    {
+    IEnumerator PlayerFastAttack(){
         Debug.Log("Player Fast Attack");
         playerSource.PlayOneShot(playerFastAttackClip);
         // enemyMovingToTheSide = true;
         yield return new WaitForSeconds(playerFastAttackClip.length);
         playerAttacking = false;
         // enemyMovingToTheSide = false;
-        if (playerCanHit && closeEnoughToFastAttack)
-        {
+        if (playerCanHit && closeEnoughToFastAttack){
             enemyHealth -= 1;
             enemyAttacking = false;
             enemySource.Stop();
@@ -400,10 +337,7 @@ public class Combat : MonoBehaviour
             StartCoroutine(RepeatPlayerBreathing());
 
             yield break;
-        }
-
-        else if (enemyCanParry)
-        {
+        } else if (enemyCanParry){
             Debug.Log("Player Fast Attack Parried");
             playerStunned = true;
             enemySource.PlayOneShot(enemyParryClip);
@@ -416,8 +350,7 @@ public class Combat : MonoBehaviour
         }
     }
 
-    IEnumerator PlayerSlowAttack()
-    {
+    IEnumerator PlayerSlowAttack(){
         Debug.Log("Player Slow Attack");
         playerSlowAttack = true;
         playerSource.PlayOneShot(playerSlowAttackClip);
@@ -497,8 +430,7 @@ public class Combat : MonoBehaviour
         yield return new WaitForSeconds(enemySlowAttackClip.length);
         enemyAttacking = false;
 
-        if (!enemyBeenParried && closeEnoughToSlowAttack)
-        {
+        if (!enemyBeenParried && closeEnoughToSlowAttack){
             playerHealth -= 2;
             playerAttacking = false;
             playerSource.Stop();
@@ -509,9 +441,7 @@ public class Combat : MonoBehaviour
             PlayerBeenHit();
             StartCoroutine(EnemyMoveTowardsOrTaunt());
             enemyMoveAway = true;
-        }
-        else
-        {
+        } else {
             Debug.Log("Enemy Missed Player");
             enemySource.PlayOneShot(enemyMissedPlayerClip);
             yield return new WaitForSeconds(enemyMissedPlayerClip.length);
@@ -531,8 +461,7 @@ public class Combat : MonoBehaviour
         Debug.Log("Enemy Pushed Player");
         yield return new WaitForSeconds(enemyPushClip.length);
         enemyAttacking = false;
-        if (!enemyBeenParried && closeEnoughToFastAttack)
-        {
+        if (!enemyBeenParried && closeEnoughToFastAttack){
             playerAttacking = false;
             playerSource.Stop();
             playerSource.PlayOneShot(playerBeenPushedClip);
@@ -540,9 +469,7 @@ public class Combat : MonoBehaviour
             Vector3 direction = (enemySource.transform.position - playerSource.transform.position).normalized;
             playerSource.transform.position -= direction * playerKnockbackEnemyDistance * 2;
             StartCoroutine(EnemySlowAttack());
-        }
-        else
-        {
+        } else {
             enemySource.PlayOneShot(enemyMissedPlayerClip);
             StartCoroutine(EnemyMoveTowardsOrTaunt());
             yield return new WaitForSeconds(enemyMissedPlayerClip.length);
@@ -551,8 +478,7 @@ public class Combat : MonoBehaviour
         yield break;
     }
 
-    IEnumerator EnemyTaunt()
-    {
+    IEnumerator EnemyTaunt(){
         enemySource.Stop();
         Debug.Log("Enemy Taunt");
         enemyCanMove = false;
@@ -565,8 +491,7 @@ public class Combat : MonoBehaviour
         yield break;
     }
 
-    IEnumerator EnemyBeenParried()
-    {
+    IEnumerator EnemyBeenParried(){
         Debug.Log("Enemy Been Parried");
         // enemyMovingToTheSide = false;
         playerSource.PlayOneShot(playerParryClip);
@@ -599,41 +524,30 @@ public class Combat : MonoBehaviour
     }
     #endregion
     
-    void CheckIfCenteredAndDistance()
-    {
-        if (controls.inCombat)
-        {
+    void CheckIfCenteredAndDistance(){
+        if (controls.inCombat){
             distanceFromPlayer = Vector3.Distance(playerSource.transform.position, enemySource.transform.position);
             angleToEnemy = Quaternion.Angle(playerSource.transform.rotation, enemySource.transform.rotation);
             bool playerWillMiss;
 
-            if (angleToEnemy < playersMaxAngleToMiss)
-            {
+            if (angleToEnemy < playersMaxAngleToMiss){
                 playerWillMiss = true;
                 enemyCanParry = false;
-            }
-            else if (angleToEnemy < enemysMaxAngleToParry && !enemyAttacking)
-            {
+            } else if (angleToEnemy < enemysMaxAngleToParry && !enemyAttacking){
                 playerWillMiss = false;
                 enemyCanParry = true;
-            }
-            else
-            {
+            } else {
                 playerWillMiss = false;
                 enemyCanParry = false;
             }
 
-            if (!playerWillMiss && !enemyCanParry)
-            {
+            if (!playerWillMiss && !enemyCanParry){
                 playerCanHit = true;
-            }
-            else
-            {
+            } else {
                 playerCanHit = false;
             }
 
             // DISTANCE
-
             closeEnoughToSlowAttack = distanceFromPlayer < maxDistanceSlowAttack ? true : false;
             closeEnoughToFastAttack = distanceFromPlayer < maxDistanceFastAttack ? true : false;
         }
@@ -646,18 +560,15 @@ public class Combat : MonoBehaviour
         }
     }
 
-    void CheckIfDead()
-    {
-        if (enemyHealth < 1 && controls.inCombat)
-        {
+    void CheckIfDead(){
+        if (enemyHealth < 1 && controls.inCombat){
             enemySource.PlayOneShot(enemyBeenKilledClip);
             darkVsLight.playerDarkness += 1;
             controls.inCombat = false;
         }
     }
 
-    IEnumerator RepeatEnemyBreathing()
-    {
+    IEnumerator RepeatEnemyBreathing(){
         if (enemyHealth > (initialEnemyHealth * 0.66f)){
             enemyBreathingClips = enemyBreathingHighHealthClips; // REFACTOR - THIS WILL BE CHANGED WHEN HAVE DIFFERENT LEVELS OF BREATHING
         } else if (enemyHealth > (initialEnemyHealth * 0.33f)){
@@ -667,30 +578,22 @@ public class Combat : MonoBehaviour
         }
         enemySource.PlayOneShot(enemyBreathingClips[Random.Range(0, enemyBreathingClips.Length)]);
         yield return new WaitForSeconds(enemyBreathingClip.length);
-        if (!enemySource.isPlaying)
-        {
+        if (!enemySource.isPlaying){
             StartCoroutine(RepeatEnemyBreathing());
         }
     }
 
-    IEnumerator RepeatPlayerBreathing()
-    {
-        if (playerHealth > (initialPlayerHealth * 0.66f))
-        {
+    IEnumerator RepeatPlayerBreathing(){
+        if (playerHealth > (initialPlayerHealth * 0.66f)){
             playerBreathingClips = playerBreathingHighHealthClips;
-        }
-        else if (playerHealth > (initialPlayerHealth * 0.33f))
-        {
+        } else if (playerHealth > (initialPlayerHealth * 0.33f)){
             playerBreathingClips = playerBreathingMidHealthClips;
-        }
-        else if (playerHealth > 0)
-        {
+        } else if (playerHealth > 0){
             playerBreathingClips = playerBreathingLowHealthClips;
         }
         playerSource.PlayOneShot(playerBreathingClips[Random.Range(0, playerBreathingClips.Length)]);
         yield return new WaitForSeconds(playerBreathingClips[0].length);
-        if (!playerSource.isPlaying) // THIS PROBABLY WON'T WORK DUE TO FOOTSTEPS AND OTHER THINGS! INSTEAD MAY NEED A SEPARATE BREATHING CHANNEL
-        {
+        if (!playerSource.isPlaying) // THIS PROBABLY WON'T WORK DUE TO FOOTSTEPS AND OTHER THINGS! INSTEAD MAY NEED A SEPARATE BREATHING CHANNEL{
             StartCoroutine(RepeatPlayerBreathing());
         }
     }

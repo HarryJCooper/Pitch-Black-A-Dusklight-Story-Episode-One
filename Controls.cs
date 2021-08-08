@@ -43,7 +43,7 @@ public class Controls : MonoBehaviour
     // REFACTOR - public ChooseDisplayImage chooseDisplayImage;
 
     private void Awake(){
-        canZoom = false;
+        canZoom = true; // REFACTOR - This is just for testing, should start at false. 
     }
 
     private void Start(){
