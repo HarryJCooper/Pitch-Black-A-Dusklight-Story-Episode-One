@@ -129,10 +129,7 @@ public class Controls : MonoBehaviour
             moveBackward = false;
         }
 
-        if (!Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow) && computer) notMoving = true; 
-        else notMoving = false;
-        if (Input.touchCount == 0 && mobile) notMoving = true;
-        else notMoving = false;
+        if (!moveForward && !moveBackward) notMoving = true; else notMoving = false;
             
         #endregion
 

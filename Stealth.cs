@@ -5,9 +5,7 @@ using UnityEngine.Audio;
 
 public class Stealth : MonoBehaviour
 {
-    // IF WITHIN A CERTAIN DISTANCE PLAYER IS HEARD
-    // IF MOVING TOO FAST PLAYER IS HEARD
-    // IF ENEMY IS FACING PLAYER PLAYER HAS TO BE STILL? - would need to use some indicator that you're being looked at, maybe a timer?
+    // REFACTOR - If the player is moving then countdown, otherwise stay, but don't reset to 0 until back out of range! 
 
     [SerializeField] DarkVsLight darkVsLight;
     AudioMixer enemyMixer;
@@ -89,15 +87,19 @@ public class Stealth : MonoBehaviour
 
     void CheckIfDetected(){
         if (beingDetected){
-            detectionTimer += Time.deltaTime;
-            PlayerIsHeard();
+            Debug.Log("being detected");
+            if (!controls.notMoving){
+                Debug.Log("not moving");
+                detectionTimer += Time.deltaTime;
+                PlayerIsHeard();
+            }
         } else {
             beingDetectedClipPlayed = false;
             playerDetectedClipCounter = 0;
             detectionTimer = 0;
         }
         if (detectionTimer > maxDetectionTime) StartCoroutine(PlayerIsFound());
-        if (distanceFromPlayer < currentDetectionDistance * 0.5f && !playerCrouching) StartCoroutine(PlayerIsFound());
+        if (distanceFromPlayer < currentDetectionDistance * 0.5f && !playerCrouching) StartCoroutine(PlayerIsFound()); // REFACTOR - Can move this into one check
         if (distanceFromPlayer < currentDetectionDistance * 0.5f && !enemyFacingAway) StartCoroutine(PlayerIsFound());
     }
 
