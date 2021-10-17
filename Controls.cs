@@ -4,12 +4,10 @@ using UnityEngine;
 
 public class Controls : MonoBehaviour
 {
-
-
     [SerializeField] private float doubleTapDelta = 0.5f;
 
     public bool canZoom, tap, doubleTap, swipeLeft, swipeRight, swipeUp, swipeDown;
-    public bool currentlyPaused, mobile, computer, canPause;
+    public bool currentlyPaused, mobile, computer, canPause, canFocus;
     private Vector2 swipeDelta, startTouch;
     private float lastTap;
 
@@ -28,7 +26,7 @@ public class Controls : MonoBehaviour
     bool hold;
 
     // CONTROL
-    public bool inZoom, inCombat, inStealth, enteredZoom;
+    public bool inZoom, inCombat, inStealth, inCutscene, enteredZoom;
     
     // COMBAT
     public bool parry, fastAttack, slowAttack, quickRotateRight, quickRotateLeft;
