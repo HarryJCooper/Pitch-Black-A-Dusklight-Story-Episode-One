@@ -5,7 +5,7 @@ using UnityEngine.Audio;
 
 public class PauseMenu : MonoBehaviour
 {
-    bool hasPlayedIntro, continueGame, saveGame, controlsBool, compass, credits, close, hasMoved, paused, hasPaused;
+    bool hasPlayedIntro, continueGame, saveGame, controlsBool, compass, credits, close, hasMoved, paused, hasPaused, hasContinued;
     public bool compassActivated;
     bool moveUp, moveDown, enter;
     bool fadeAmbience;
