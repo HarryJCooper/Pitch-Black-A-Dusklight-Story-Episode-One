@@ -29,7 +29,7 @@ public class Stealth : MonoBehaviour
     }
 
     private void Update(){ 
-        if (Input.GetKeyDown(KeyCode.X) && !turnedOn && !hasBeenTurnedOn){ // REFACTOR - this is temporary
+        if (!turnedOn && !hasBeenTurnedOn){ // REFACTOR - this is temporary
             turnedOn = true;
             hasBeenTurnedOn = true;
             controls.inStealth = true;

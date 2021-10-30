@@ -25,28 +25,17 @@ public class PBFootstepSystem : MonoBehaviour
     }
 
     void Update(){
+        if(controls.inCutscene || controls.paused){
+            canMove = false;
+        } else {
+            canMove = true;
+        }
         if (controls.sprint){
             moveSpeed = sprintMoveSpeed;
         } else if (controls.crouching){
             moveSpeed = crouchMoveSpeed;
         } else {
             moveSpeed = initialMoveSpeed;
-        }
-        
-        Vector3 Origin = transform.position;
-        Vector3 fDirection = transform.forward;
-        Vector3 bDirection = -transform.forward;
-
-        if (raycastToWall){
-            Ray fRay = new Ray(Origin, fDirection);
-            Ray bRay = new Ray(Origin, bDirection);
-
-            if (Physics.Raycast(fRay, out RaycastHit fRaycastHit, maxDistance, -5, QueryTriggerInteraction.Ignore)){
-                fWallDist = fRaycastHit.distance;
-            }
-            if (Physics.Raycast(bRay, out RaycastHit bRaycastHit, maxDistance, -5, QueryTriggerInteraction.Ignore)){
-                bWallDist = bRaycastHit.distance;
-            }
         }
 
         if (canRotate){
@@ -55,6 +44,21 @@ public class PBFootstepSystem : MonoBehaviour
         }
 
         if (canMove){
+            Vector3 Origin = transform.position;
+            Vector3 fDirection = transform.forward;
+            Vector3 bDirection = -transform.forward;
+
+            if (raycastToWall){
+                Ray fRay = new Ray(Origin, fDirection);
+                Ray bRay = new Ray(Origin, bDirection);
+
+                if (Physics.Raycast(fRay, out RaycastHit fRaycastHit, maxDistance, -5, QueryTriggerInteraction.Ignore)){
+                    fWallDist = fRaycastHit.distance;
+                }
+                if (Physics.Raycast(bRay, out RaycastHit bRaycastHit, maxDistance, -5, QueryTriggerInteraction.Ignore)){
+                    bWallDist = bRaycastHit.distance;
+                }
+            }
             if (!initialFootstepAllow) initialFootstepDelay += Time.deltaTime;
             if (initialFootstepDelay > 0.3) initialFootstepAllow = true;
             if (controls.firstMoveForward){
