@@ -5,7 +5,9 @@ using UnityEngine.Audio;
 
 public class Stealth : MonoBehaviour
 {
-    // REFACTOR - If the player is moving then countdown, otherwise stay, but don't reset to 0 until back out of range! 
+    // REFACTOR - MOVE COROUTINE PATTERN TO STEALTH
+
+    // MOVE TOWARDS ENEMY - DETECTION SIGNAL SOUNDS - VOLUME TURNS UP AS YOU GET CLOSER - 
 
     [SerializeField] DarkVsLight darkVsLight;
     AudioMixer enemyMixer;
@@ -33,15 +35,15 @@ public class Stealth : MonoBehaviour
             turnedOn = true;
             hasBeenTurnedOn = true;
             controls.inStealth = true;
-            StartCoroutine(RepeatEnemyBreathing());
+            // StartCoroutine(RepeatEnemyBreathing());
             StartCoroutine(DistanceFromEnemySignifier());
-            StartCoroutine(GetAngleTowardsPlayer());
+            // StartCoroutine(GetAngleTowardsPlayer());
         }
         if (turnedOn){
             DetectionDistanceModifier();
             CheckIfDetected();
-            CheckIfCanAssassinate();
-            CheckIfAssassinate();
+            // CheckIfCanAssassinate();
+            // CheckIfAssassinate();
         }
     }
 
@@ -65,7 +67,7 @@ public class Stealth : MonoBehaviour
         lowpassFrequency = enemyAngleToPlayer * lowpassModifier;
         if (distanceFromPlayer < currentDetectionDistance) beingDetected = true; else beingDetected = false;
 
-        enemyMixer.SetFloat("EnemyLowpassFreq", lowpassFrequency);
+        enemyMixer.SetFloat(this.gameObject.name + "_LowpassFreq", lowpassFrequency);
         enemySource.PlayOneShot(beepingClip);
         if(turnedOn){
             StartCoroutine(DistanceFromEnemySignifier());
@@ -74,22 +76,20 @@ public class Stealth : MonoBehaviour
         }
     }
 
-    IEnumerator GetAngleTowardsPlayer(){
-        // Calculate the vector pointing from the enemy to the player
-        Vector3 enemyDir = transform.position - playerSource.transform.position;
+    // IEnumerator GetAngleTowardsPlayer(){
+    //     // Calculate the vector pointing from the enemy to the player
+    //     Vector3 enemyDir = transform.position - playerSource.transform.position;
 
-        // Calculate the angle between the forward vector of the player and the vector pointing to the enemy
-        enemyAngleToPlayer = Vector3.Angle(transform.forward, enemyDir);
-        if (enemyAngleToPlayer < 100) enemyFacingAway = true;
-        yield return new WaitForSeconds(0.1f);
-        StartCoroutine(GetAngleTowardsPlayer());
-    }
+    //     // Calculate the angle between the forward vector of the player and the vector pointing to the enemy
+    //     enemyAngleToPlayer = Vector3.Angle(transform.forward, enemyDir);
+    //     if (enemyAngleToPlayer < 100) enemyFacingAway = true;
+    //     yield return new WaitForSeconds(0.1f);
+    //     StartCoroutine(GetAngleTowardsPlayer());
+    // }
 
     void CheckIfDetected(){
         if (beingDetected){
-            Debug.Log("being detected");
             if (!controls.notMoving){
-                Debug.Log("not moving");
                 detectionTimer += Time.deltaTime;
                 PlayerIsHeard();
             }
@@ -114,50 +114,52 @@ public class Stealth : MonoBehaviour
         }
     }
 
-    void CheckIfCanAssassinate(){
-        if (playerCrouching && distanceFromPlayer < maxAssassinateDistance && enemyFacingAway){
-            canAssassinate = true;
-        } else {
-            canAssassinate = false;
-        }
-    }
+    // void CheckIfCanAssassinate(){
+    //     if (playerCrouching && distanceFromPlayer < maxAssassinateDistance && enemyFacingAway){
+    //         canAssassinate = true;
+    //     } else {
+    //         canAssassinate = false;
+    //     }
+    // }
 
-    void CheckIfAssassinate(){
-        if (canAssassinate && controls.enter){
-            StartCoroutine(EnemyAssassinated());
-        }
-    }
+    // void CheckIfAssassinate(){
+    //     if (canAssassinate && controls.enter){
+    //         StartCoroutine(EnemyAssassinated());
+    //     }
+    // }
 
     IEnumerator PlayerIsFound(){
         turnedOn = false;
         controls.inStealth = false;
         controls.inCombat = true;
         lowpassFrequency = 20000;
-        enemyMixer.SetFloat("EnemyLowpassFreq", lowpassFrequency);
-        StartCoroutine(this.GetComponent<Combat>().EnemyMoveTowardsOrTaunt());
+        enemyMixer.SetFloat(this.gameObject.name + "_LowpassFreq", lowpassFrequency);
+        if (breathingCoroutine != null) StopCoroutine(breathingCoroutine);
+        //StartCoroutine(this.GetComponent<GuardCombatSequence>().EnterCombat());
+        enemySource.Stop();
         enemySource.PlayOneShot(enemyFoundPlayerClip);
         yield return new WaitForSeconds(enemyFoundPlayerClip.length);
         playerSource.PlayOneShot(playerFoundClip);
     }
 
-    IEnumerator RepeatEnemyBreathing(){
-        enemySource.PlayOneShot(enemyBreathingClips[Random.Range(0, enemyBreathingClips.Length)]);
-        yield return new WaitForSeconds(enemyBreathingClips[0].length);
-        breathingCoroutine = RepeatEnemyBreathing();
-        StartCoroutine(breathingCoroutine);
-    }
+    // IEnumerator RepeatEnemyBreathing(){
+    //     enemySource.PlayOneShot(enemyBreathingClips[Random.Range(0, enemyBreathingClips.Length)]);
+    //     yield return new WaitForSeconds(enemyBreathingClips[0].length);
+    //     breathingCoroutine = RepeatEnemyBreathing();
+    //     StartCoroutine(breathingCoroutine);
+    // }
 
-    IEnumerator EnemyAssassinated(){
-        turnedOn = false;
-        controls.inStealth = false;
-        lowpassFrequency = 20000;
-        enemyMixer.SetFloat("EnemyLowpassFreq", lowpassFrequency);
-        playerSource.PlayOneShot(playerAssassinatedEnemyClip); 
-        yield return new WaitForSeconds(playerAssassinatedEnemyClip.length);
-        enemySource.Stop();
-        StopCoroutine(breathingCoroutine);
-        enemySource.PlayOneShot(enemyAssassinatedByPlayerClip); 
-        yield return new WaitForSeconds(enemyAssassinatedByPlayerClip.length);
-        darkVsLight.playerDarkness -= 1;
-    }
+    // IEnumerator EnemyAssassinated(){
+    //     turnedOn = false;
+    //     controls.inStealth = false;
+    //     lowpassFrequency = 20000;
+    //     enemyMixer.SetFloat(this.gameObject.name + "_LowpassFreq", lowpassFrequency);
+    //     playerSource.PlayOneShot(playerAssassinatedEnemyClip); 
+    //     yield return new WaitForSeconds(playerAssassinatedEnemyClip.length);
+    //     enemySource.Stop();
+    //     if (breathingCoroutine != null) StopCoroutine(breathingCoroutine);
+    //     enemySource.PlayOneShot(enemyAssassinatedByPlayerClip); 
+    //     yield return new WaitForSeconds(enemyAssassinatedByPlayerClip.length);
+    //     darkVsLight.playerDarkness -= 1;
+    // }
 }

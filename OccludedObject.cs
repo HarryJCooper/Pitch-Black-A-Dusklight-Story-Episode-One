@@ -12,7 +12,7 @@ public class OccludedObject : MonoBehaviour
     AudioMixer audioMixer;
     string occlusionVolumeString, occlusionFrequencyString;
     
-    public void Awake(){
+    void Awake(){
         audioSource = GetComponent<AudioSource>();
         audioMixerGroup = audioSource.outputAudioMixerGroup;
         audioMixer = audioSource.outputAudioMixerGroup.audioMixer;
@@ -20,26 +20,21 @@ public class OccludedObject : MonoBehaviour
         occlusionFrequencyString = audioMixerGroup.name + "_OcclusionCutOff";
     }
 
-    private void Update(){
-        if (!occluded){
-            volumeReduction = 0;
-            frequencyReduction = 0;
-            volumeIncreaser += Time.deltaTime;
-            audioMixer.SetFloat(occlusionFrequencyString, Mathf.Lerp(reducedFrequency, initialFrequency, volumeIncreaser));
-            audioMixer.SetFloat(occlusionVolumeString, Mathf.Lerp(reducedVolume, initialVolume, volumeIncreaser));
-        }
-
+    void Update(){
         if (occluded){
             reducedVolume = initialVolume - volumeReduction;
             reducedFrequency = initialFrequency - frequencyReduction;
             volumeIncreaser = 0;
-            if (volumeReducer >= 0){
-                volumeReducer -= Time.deltaTime;
-            }
+            if (volumeReducer >= 0) volumeReducer -= Time.deltaTime;
             audioMixer.SetFloat(occlusionVolumeString, Mathf.Lerp(reducedVolume, initialVolume, volumeReducer));
             audioMixer.SetFloat(occlusionFrequencyString, Mathf.Lerp(reducedFrequency, initialFrequency, volumeReducer));
-        } else {    
-            volumeReducer = 1;
+            return;
         }
+        volumeReduction = 0;
+        frequencyReduction = 0;
+        volumeIncreaser += Time.deltaTime;
+        audioMixer.SetFloat(occlusionFrequencyString, Mathf.Lerp(reducedFrequency, initialFrequency, volumeIncreaser));
+        audioMixer.SetFloat(occlusionVolumeString, Mathf.Lerp(reducedVolume, initialVolume, volumeIncreaser));
+        volumeReducer = 1;  
     }
 }

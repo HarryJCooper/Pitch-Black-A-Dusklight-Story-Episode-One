@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: fb71a6e7d189f44a792a0f648d11005b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - saveAndLoad: {instanceID: 0}
+  - cutsceneSound: {fileID: 8300000, guid: c1fa661e2a7f92f45bf86e2025e530be, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

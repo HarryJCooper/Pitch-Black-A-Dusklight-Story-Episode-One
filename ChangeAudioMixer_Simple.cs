@@ -15,7 +15,7 @@ public class ChangeAudioMixer_Simple : MonoBehaviour
         New();
         if (other.tag == "Player")
         {
-            Player.GetComponent<PBFootstepSystem>().footsteps = footstepsArray;
+            Player.GetComponent<PBFootstepSystem>().footstepClips = footstepsArray;
         }
     }
 

@@ -3,121 +3,147 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class PBFootstepSystem : MonoBehaviour
-{
-    public AudioClip[] footTypeOne, footsteps;
+{   public bool isBaby;
+    public AudioClip[] footstepClips;
+    public float walkSpeedModifier;
     public float walkDist, maxDist, moveSpeed, sprintMoveSpeed, initialMoveSpeed, crouchMoveSpeed, initialFootstepDelay;
     public float rotSpeed, rotationTimer;
-    private Vector3 recentTransform, Player;
-    public float fWallDist, bWallDist, maxWallDist;
-    private float maxDistance = 200;
-    public AudioSource footstepSound;
-    public GameObject[] Ts, sewerTiles;
-    public Vector3 currentPos;
-    public bool canMove, firstLevel, moveForward, canRotate = true, raycastToWall, footstepsTypeOne;
-    public Controls controls;
+    Vector3 recentTransform;
+    float fWallDist, bWallDist;
+    [SerializeField] float maxWallDist;
+    const float maxDistance = 200;
+    [SerializeField] AudioSource footstepSource;
+    public bool canMove, firstLevel, canRotate = true;
+    [SerializeField] Controls controls;
     bool initialFootstepAllow;
+    int layerMask, footstepInt;
 
     void Start(){
-        Player = transform.localPosition;
-        if (footstepsTypeOne) footsteps = footTypeOne;
         fWallDist = bWallDist = 5;
         controls = GameObject.Find("Controls").GetComponent<Controls>();
+        layerMask = 1 << 12;
+        layerMask = ~layerMask;
+    }
+
+    void CheckIfCanMove(){
+        if (controls.inCutscene || controls.paused) {
+            canMove = false; 
+            return;
+        }
+        canMove = true;
+    }
+
+    void IncreaseRotationTimer(){
+        if (rotationTimer > 0.60f){       
+            footstepSource.PlayOneShot(footstepClips[Random.Range(0, footstepClips.Length)], Random.Range(0.8f, 1f));
+            rotationTimer = 0;
+        }
+        if (controls.turnRight && !controls.moveForward && !controls.moveBackward) {rotationTimer += Time.deltaTime; return;}
+        if (controls.turnLeft && !controls.moveForward && !controls.moveBackward) {rotationTimer += Time.deltaTime; return;}
+    }
+
+    void CheckForRotate(){
+        IncreaseRotationTimer();
+        if (controls.turnLeft) {transform.Rotate(Vector3.up, -rotSpeed * Time.deltaTime); return;}
+        if (controls.turnRight) {transform.Rotate(Vector3.up, rotSpeed * Time.deltaTime); return;}
+        if (controls.quickRotateLeft) {transform.Rotate(Vector3.up, -90); return;}
+        if (controls.quickRotateRight) {transform.Rotate(Vector3.up, 90); return;}
+    }
+
+    void FirstMoveBackward(){
+        recentTransform = transform.position;
+        float footstepVol = controls.crouching ? Random.Range(0.2f, 0.3f) : Random.Range(0.8f, 1f);
+        footstepSource.PlayOneShot(footstepClips[Random.Range(0, footstepClips.Length)], footstepVol);
+        initialFootstepAllow = false;
+        initialFootstepDelay = 0;
+    }
+
+    void FirstMoveForward(){
+        recentTransform = transform.position;
+        float footstepVol = controls.crouching ? Random.Range(0.05f, 0.1f) : Random.Range(0.4f, 0.5f);
+        footstepSource.PlayOneShot(footstepClips[Random.Range(0, footstepClips.Length)], footstepVol);
+        initialFootstepAllow = false;
+        initialFootstepDelay = 0;
+    }
+
+    void CheckFirstMove(){
+        if (!initialFootstepAllow) return;
+        if (controls.firstMoveForward) FirstMoveForward();
+        if (controls.firstMoveBackward) FirstMoveBackward(); 
+    }
+
+    void RaycastToWall(){
+        Vector3 origin = transform.position;
+        Vector3 fDirection = transform.forward;
+        Vector3 bDirection = -transform.forward;
+        Ray fRay = new Ray(origin, fDirection);
+        Ray bRay = new Ray(origin, bDirection);
+        if (Physics.Raycast(fRay, out RaycastHit fRaycastHit, maxDistance, layerMask, QueryTriggerInteraction.Ignore)) fWallDist = fRaycastHit.distance;
+        else fWallDist = 200;
+        if (Physics.Raycast(bRay, out RaycastHit bRaycastHit, maxDistance, layerMask, QueryTriggerInteraction.Ignore)) bWallDist = bRaycastHit.distance;
+        else bWallDist = 200;
+    }
+
+    void IncreaseWalkDist(){
+        if (controls.moveForward){ 
+            walkDist += Vector3.Distance(recentTransform, transform.position) * Time.deltaTime * 50; 
+            return;
+        }
+        if (controls.moveBackward){ 
+            walkDist += Vector3.Distance(recentTransform, transform.position) * Time.deltaTime * 25; 
+            return;
+        }
+        walkDist = 0;
+        recentTransform = transform.position;
+    }
+
+    void MoveForwardAndBackward(){
+        if (controls.moveForward && fWallDist > maxWallDist) {
+            transform.position += transform.forward * Time.deltaTime * moveSpeed; 
+            return;
+        }
+        if (controls.moveBackward && bWallDist > maxWallDist) {
+            transform.position -= transform.forward * Time.deltaTime * moveSpeed; 
+            return;
+        }
+    }
+
+    int RandomNumberGen(){
+        int randomInt = Random.Range(0, footstepClips.Length);
+        if (randomInt == footstepInt) randomInt = RandomNumberGen();
+        return randomInt;
+    }
+
+    void CheckIfPlayFootstep(){
+        if (walkDist > maxDist && walkDist < (maxDist + 20)){
+            footstepInt = RandomNumberGen();
+            footstepSource.PlayOneShot(footstepClips[footstepInt], Random.Range(0.8f, 1f));
+            if (isBaby) maxDist = Random.Range(50f, 70f);
+            walkDist = 0;
+            recentTransform = transform.position;
+        }
+    }
+
+    void CheckMoveSpeed(){
+        if (controls.sprint) {moveSpeed = sprintMoveSpeed + walkSpeedModifier; return;}
+        if (controls.crouching) {moveSpeed = crouchMoveSpeed + walkSpeedModifier; return;}
+        moveSpeed = initialMoveSpeed + walkSpeedModifier;
+    }
+
+    void CheckForMovement(){
+        if (!initialFootstepAllow) initialFootstepDelay += Time.deltaTime;
+        if (initialFootstepDelay > 0.3) initialFootstepAllow = true; 
+        RaycastToWall();  
+        IncreaseWalkDist();
+        MoveForwardAndBackward();
+        CheckIfPlayFootstep();
+        CheckMoveSpeed();
+        CheckFirstMove();
     }
 
     void Update(){
-        if(controls.inCutscene || controls.paused){
-            canMove = false;
-        } else {
-            canMove = true;
-        }
-        if (controls.sprint){
-            moveSpeed = sprintMoveSpeed;
-        } else if (controls.crouching){
-            moveSpeed = crouchMoveSpeed;
-        } else {
-            moveSpeed = initialMoveSpeed;
-        }
-
-        if (canRotate){
-            if (controls.turnLeft) transform.Rotate(Vector3.up, -rotSpeed * Time.deltaTime);
-            if (controls.turnRight) transform.Rotate(Vector3.up, rotSpeed * Time.deltaTime);
-        }
-
-        if (canMove){
-            Vector3 Origin = transform.position;
-            Vector3 fDirection = transform.forward;
-            Vector3 bDirection = -transform.forward;
-
-            if (raycastToWall){
-                Ray fRay = new Ray(Origin, fDirection);
-                Ray bRay = new Ray(Origin, bDirection);
-
-                if (Physics.Raycast(fRay, out RaycastHit fRaycastHit, maxDistance, -5, QueryTriggerInteraction.Ignore)){
-                    fWallDist = fRaycastHit.distance;
-                }
-                if (Physics.Raycast(bRay, out RaycastHit bRaycastHit, maxDistance, -5, QueryTriggerInteraction.Ignore)){
-                    bWallDist = bRaycastHit.distance;
-                }
-            }
-            if (!initialFootstepAllow) initialFootstepDelay += Time.deltaTime;
-            if (initialFootstepDelay > 0.3) initialFootstepAllow = true;
-            if (controls.firstMoveForward){
-                recentTransform = transform.position;
-                if (initialFootstepAllow){
-                    footstepSound.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)], Random.Range(0.8f, 1f));
-                    initialFootstepAllow = false;
-                    initialFootstepDelay = 0;
-                }
-            }
-
-            if (controls.firstMoveBackward){
-                recentTransform = transform.position;
-                if (initialFootstepAllow){
-                    footstepSound.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)], Random.Range(0.8f, 1f));
-                    initialFootstepAllow = false;
-                    initialFootstepDelay = 0;
-                }
-            }
-
-            if (controls.moveForward){
-                walkDist += Vector3.Distance(recentTransform, transform.position) * Time.deltaTime * 60;
-            } else if (controls.moveBackward){
-                walkDist += Vector3.Distance(recentTransform, transform.position) * Time.deltaTime * 60;
-            } else {
-                walkDist = 0;
-                recentTransform = transform.position;
-            }
-
-            if (controls.moveForward){
-                if (fWallDist > maxWallDist){
-                    transform.position += transform.forward * Time.deltaTime * moveSpeed;
-                }
-            } else if (controls.moveBackward){
-                if (bWallDist > maxWallDist){
-                    transform.position -= transform.forward * Time.deltaTime * moveSpeed;
-                }
-            }
-
-            if (walkDist > maxDist){
-                footstepSound.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)], Random.Range(0.8f, 1f));
-                walkDist = 0;
-                recentTransform = transform.position;
-            }
-        }
-
-        if (canRotate){
-            if (controls.turnRight && !controls.moveForward && !controls.moveBackward){
-                rotationTimer += Time.deltaTime;
-            }
-
-            if (controls.turnLeft && !controls.moveForward && !controls.moveBackward){
-                rotationTimer += Time.deltaTime;
-            }
-            
-            if (rotationTimer > 0.60f){          
-                footstepSound.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)], Random.Range(0.8f, 1f));
-                rotationTimer = 0;
-            }
-        }
+        CheckIfCanMove();
+        if (canRotate) CheckForRotate();
+        if (canMove) CheckForMovement();
     }
 }

@@ -7,41 +7,40 @@ using UnityEngine.Audio;
 
 public class IncreaseSourceVolume : MonoBehaviour
 {
-    public AudioSource audioSource;
-    public AudioMixer audioMixer;
-    public string inViewName;
+    AudioSource audioSource;
+    AudioMixer audioMixer;
+    string inViewName;
+    float increaseTimer, reduceTimer;
     public bool inView, directBehind, hasIncreased;
-    public float initialVolume = -5, increasedVolume = 0, reducedVolume = -10;
-    public float increaseTimer, reduceTimer;
+    const float initialVolume = -5, increasedVolume = 0, reducedVolume = -10;
 
-    private void Awake()
-    {
+    void Awake(){
         audioSource = GetComponent<AudioSource>();
         audioMixer = audioSource.outputAudioMixerGroup.audioMixer;
         inViewName = audioSource.outputAudioMixerGroup.name + "_InViewVol";
     }
 
-    private void Update()
-    {
-        if (inView)
-        {
-            reduceTimer = 0;
-            increaseTimer += Time.deltaTime * 2;
-            audioMixer.SetFloat(inViewName, Mathf.Lerp(initialVolume, increasedVolume, increaseTimer));
-        }
+    void InViewChangeVol(){
+        reduceTimer = 0;
+        increaseTimer += Time.deltaTime * 2;
+        audioMixer.SetFloat(inViewName, Mathf.Lerp(initialVolume, increasedVolume, increaseTimer));
+    }
 
-        if (!inView && !directBehind)
-        {
-            reduceTimer = 0;
-            increaseTimer = 0;
-            audioMixer.SetFloat(inViewName, initialVolume);
-        }
+    void NotInViewChangeVol(){
+        reduceTimer = 0;
+        increaseTimer = 0;
+        audioMixer.SetFloat(inViewName, initialVolume);
+    }
 
-        if (directBehind)
-        {
-            increaseTimer = 0;
-            reduceTimer += Time.deltaTime * 2;
-            audioMixer.SetFloat(inViewName, Mathf.Lerp(initialVolume, reducedVolume, reduceTimer));
-        }
+    void DirectBehindChangeVol(){
+        increaseTimer = 0;
+        reduceTimer += Time.deltaTime * 2;
+        audioMixer.SetFloat(inViewName, Mathf.Lerp(initialVolume, reducedVolume, reduceTimer));
+    }
+
+    void Update(){
+        if (inView) InViewChangeVol();
+        if (!inView && !directBehind) NotInViewChangeVol();
+        if (directBehind) DirectBehindChangeVol();
     }
 }

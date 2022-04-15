@@ -7,20 +7,19 @@ public class Controls : MonoBehaviour
     [SerializeField] private float doubleTapDelta = 0.5f;
 
     public bool canZoom, tap, doubleTap, swipeLeft, swipeRight, swipeUp, swipeDown;
-    public bool currentlyPaused, mobile, computer, canPause, canFocus;
+    public bool currentlyPaused, mobile, computer, canPause;
     private Vector2 swipeDelta, startTouch;
     private float lastTapTime, lastRightTime, lastLeftTime, leftTime, rightTime;
     public float pauseTimer;
 
     // GENERAL MOVEMENT
-    public bool turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching, notMoving;
-    bool hold;
+    public bool doubleTapRight, doubleTapLeft, turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching, notMoving;
 
     // MODE
-    public bool inZoom, inCombat, inStealth, inCutscene, enteredZoom, inPause;
+    public bool inZoom, inCombat, inStealth, inCutscene, enteredZoom, inPause, inExplore;
     
     // COMBAT
-    public bool parry, fastAttack, slowAttack, quickRotateRight, quickRotateLeft;
+    public bool parry, attack, quickRotateRight, quickRotateLeft;
     public bool paused, enter, cutscenePlaying, allowPause;
     public Vector3 touchPosition;
     public Touch touch;
@@ -28,214 +27,140 @@ public class Controls : MonoBehaviour
     [SerializeField] float minDirection, sprintModifier;
     float firstStepCounter;
 
-    // REFACTOR - public ChooseDisplayImage chooseDisplayImage;
+    // IN MENU
+    public bool inMenu, moveUp, moveDown;
 
-    private void Awake(){
-        canZoom = true; // REFACTOR - This is just for testing, should start at false. 
+    void Awake(){ 
+        canZoom = true;
+        canPause = true;
     }
 
-    private void Start(){
+    void Start(){
         if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
-            || Application.platform == RuntimePlatform.WindowsEditor){
+            || Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor){
             computer = true;
             mobile = false;
+            return;
         }
-        if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer){
-            computer = false;
-            mobile = true;
-        }
+        computer = false;
+        mobile = true;
     }
-
     IEnumerator DoublePressStopper(){
         yield return new WaitForSeconds(0.1f);
         canPause = true;
     }
-
-    IEnumerator DoubleTapAndHoldAttack(){
-        yield return new WaitForSeconds(0.15f);
-        if (hold){
-            slowAttack = true;
-            fastAttack = false;
-        } else {
-            slowAttack = false;
-            fastAttack = true;
-        }
+    void ResetControls(){
+        swipeUp = swipeDown = swipeLeft = swipeRight = tap = quickRotateLeft = quickRotateRight = doubleTapLeft = doubleTapRight 
+        = attack = parry = moveUp = moveDown = moveForward = moveBackward = turnRight = turnLeft = false;
     }
-
-    void Update(){
-        if (Input.GetMouseButton(0) || Input.touchCount > 0 || Input.GetKey(KeyCode.Space)){
-            hold = true;
-        } else {
-            hold = false;
-        }
-        swipeUp = swipeDown = swipeLeft = swipeRight = tap = quickRotateLeft = quickRotateRight = false;
-
+    void CheckIfInExplore(){if (!inZoom && !inCombat && !inStealth && !inCutscene && !enteredZoom && !inPause) inExplore = true; else inExplore = false; }
+    void CheckForEnter(){
         if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
-            enter = true;
-        } else {
-            enter = false;
-        }
-
-        #region Sprint
-        // joystick.Vertical > sprintModifier
-        // REFACTOR - Removed for first mobile build
+            enter = true; return;
+        } 
+        enter = false;
+    }
+    void CheckForSprint(){
         if (Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftShift)){
-            sprint = true;
-        } else {
-            sprint = false;
-        }
-        #endregion
-
-        #region Movement Controls
-        // REFACTOR - JOYSTICK CONTROLS
-        if ((joystick.Horizontal > minDirection) || Input.GetKey(KeyCode.RightArrow)){
-            turnRight = true;
-        } else {
-            turnRight = false;
-        }
-
-        if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow)){
-            turnLeft = true;
-        } else {
-            turnLeft = false;
-        }
-
+            sprint = true; return;
+        } 
+        sprint = false;
+    }
+    void CheckForDoubleRight(){
+        if (!Input.GetKeyDown(KeyCode.RightArrow)) return;
+        rightTime = Time.time - lastRightTime;
+        if (rightTime < doubleTapDelta) doubleTapRight = true;
+        lastRightTime = Time.time;
+    }
+    void CheckForDoubleLeft(){
+        if (!Input.GetKeyDown(KeyCode.LeftArrow)) return;
+        leftTime = Time.time - lastLeftTime;
+        if (leftTime < doubleTapDelta) doubleTapLeft = true;
+        lastLeftTime = Time.time;
+    }
+    void TurnRight(){ if ((joystick.Horizontal > minDirection) || Input.GetKey(KeyCode.RightArrow)) turnRight = true; else turnRight = false; }
+    void TurnLeft(){ if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow)) turnLeft = true; else turnLeft = false; }
+    void MoveForward(){
         if ((joystick.Vertical > minDirection) || Input.GetKey(KeyCode.UpArrow)){
+            Debug.Log("MoveForward Controls");
             moveForward = true;
             firstStepCounter += Time.deltaTime;
         } else {
             moveForward = false;
         }
-
+    }
+    void MoveBackward(){
         if ((joystick.Vertical < -minDirection) || Input.GetKey(KeyCode.DownArrow)){
+            Debug.Log("MoveBackward Controls");
             moveBackward = true;
             firstStepCounter += Time.deltaTime;
         } else {
             moveBackward = false;
         }
-
-        if (!moveForward && !moveBackward) notMoving = true; else notMoving = false;
-        #endregion
-
-        #region First Step Forward 
+    }
+    void CheckForNotMoving(){ if (!moveForward && !moveBackward) notMoving = true; else notMoving = false;}
+    void CheckForFirstStep(){
         if (!(joystick.Vertical > minDirection) && !(joystick.Vertical < -minDirection) && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow)){
             firstStepCounter = 0;
         }
-        
-        if (firstStepCounter < 0.1 && moveForward) firstMoveForward = true;
-        else firstMoveForward = false;
-
-        if (firstStepCounter < 0.1 && moveBackward) firstMoveBackward = true;
-        else firstMoveBackward = false;
-        #endregion
-
-        #region Zoom
-        if (canZoom){
-            if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
-                Debug.Log("inZoom");
-                enteredZoom = true;
-                inZoom = true;
-                if (mobile) {
-                    Handheld.Vibrate();
-                }
-                doubleTap = false;
-            } else {
-                enteredZoom = false;
-            }
-
-            // MOBILE
-            if (Input.touchCount == 1){
-                if (Input.GetTouch(0).phase == TouchPhase.Ended){
-                    inZoom = false;
-                    Debug.Log("exit Zoom");
-                    if (mobile){
-                        Handheld.Vibrate();
-                    }
-                }
-            }
-
-            // COMPUTER
-            if (Input.GetKeyUp(KeyCode.Space)){
-                inZoom = false;
-                Debug.Log("exit Zoom");
-            }
+        if (firstStepCounter < 0.1 && moveForward) firstMoveForward = true; else firstMoveForward = false;
+        if (firstStepCounter < 0.1 && moveBackward) firstMoveBackward = true; else firstMoveBackward = false;
+    }
+    void CheckForZoom(){
+        if (!canZoom) return;
+        if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
+            enteredZoom = true;
+            inZoom = true;
+            doubleTap = false;
+        } else {
+            enteredZoom = false;
         }
-        #endregion
-
-        if (Input.GetKeyDown(KeyCode.C)){
-            inCombat = true;
-            StartCoroutine(GameObject.Find("Enemy").GetComponent<Combat>().EnemyMoveTowardsOrTaunt());
-        }
-
-        #region inCombat
-        if (inCombat){
-            inStealth = canZoom = false;
-            if (swipeUp || Input.GetKeyDown(KeyCode.Return)) parry = true;
-            if (doubleTap || Input.GetKeyDown(KeyCode.Space)) StartCoroutine(DoubleTapAndHoldAttack());
-            if (swipeRight) quickRotateLeft = true;
-            if (swipeLeft) quickRotateRight = true;
-            if(Input.GetKeyDown(KeyCode.RightArrow)){
-                rightTime = Time.time - lastRightTime;
-                if (rightTime < doubleTapDelta){
-                    quickRotateRight = true;
-                }
-                lastRightTime = Time.time;
-            }
-            if(Input.GetKeyDown(KeyCode.LeftArrow)){
-                leftTime = Time.time - lastLeftTime;
-                if (leftTime < doubleTapDelta){
-                    quickRotateLeft = true;
-                }
-                lastLeftTime = Time.time;
-            }
-        }
-        #endregion
-
-        #region inStealth
-        if (inStealth){
-            inCombat = canZoom = false;
-            if (Input.GetKeyDown(KeyCode.LeftControl) || swipeDown) 
-                if (crouching) crouching = false; else crouching = true;
-        }
-        #endregion
-
-        if (doubleTap) doubleTap = false;
-
-        #region Pause
-        if (Input.touchCount == 2 && allowPause) pauseTimer += Time.deltaTime; else pauseTimer = 0;
-
-        // REFACTOR - All controls should be dictated by simple states, e.g. InCutscene, InMainGame. 
-
+        if (Input.GetKeyUp(KeyCode.Space)) inZoom = false;
+        if (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Ended) inZoom = false;
+    }
+    void CheckForCombat(){
+        if (!inCombat) return;
+        inStealth = canZoom = inZoom = enteredZoom = crouching = false;
+        if (swipeUp || Input.GetKeyDown(KeyCode.Return)){ parry = true; Debug.Log("Parry"); } 
+        if (doubleTap || Input.GetKeyDown(KeyCode.Space)) attack = true;
+        // if (swipeRight || doubleTapLeft) quickRotateLeft = true;
+        // if (swipeLeft || doubleTapRight) quickRotateRight = true;
+    }
+    void CheckForStealth(){
+        if (!inStealth) return;
+        inCombat = false;
+        if (Input.GetKeyDown(KeyCode.LeftControl) || swipeDown) crouching = !crouching;
+    }
+    void CheckForPause(){
+        if (Input.touchCount == 2) pauseTimer += Time.deltaTime; else pauseTimer = 0;
         if ((pauseTimer > 1 || Input.GetKeyDown(KeyCode.Escape)) && !paused && canPause){
-            Debug.Log("paused");
-            paused = true;
-            canZoom = false;
-            canPause = false;
+            paused = inMenu = true;
+            canZoom = canPause = false;
             StartCoroutine(DoublePressStopper());
+            return;
         }
-
-        if (paused && Input.GetKeyDown(KeyCode.Escape)){
-            Debug.Log("off Pause");
+        if (paused && canPause && Input.GetKeyDown(KeyCode.Escape)){
             pauseTimer = 0;
-            paused = false;
+            canZoom = true;
+            paused = inMenu = false;
             StartCoroutine(DoublePressStopper());
         }
-        #endregion
-
-        if (mobile){
-            UpdateMobile();
+    }
+    void CheckForMenu(){
+        if (!inMenu) return;
+        if (swipeUp || Input.GetKeyDown(KeyCode.DownArrow)){
+            moveDown = true; 
+            return;
         }
-
-        if (Input.touchCount == 1){
-            touch = Input.GetTouch(0);
-            touchPosition = touch.position;
-            if (Input.GetTouch(0).phase == TouchPhase.Ended){
-                touchPosition.x = 0;
-            }
+        if (swipeDown || Input.GetKeyDown(KeyCode.UpArrow)){
+            moveUp = true; 
+            return;
         }
     }
 
-    private void UpdateMobile(){
+    void UpdateMobile(){
+        // if (!mobile) return;
+        if (doubleTap) doubleTap = false;
         if (Input.touches.Length != 0){
             if (Input.touches[0].phase == TouchPhase.Began){
                 tap = true;
@@ -246,22 +171,51 @@ public class Controls : MonoBehaviour
                 startTouch = swipeDelta = Vector2.zero;
             }
         }
-        
         swipeDelta = Vector2.zero;
-        
-        if (startTouch != Vector2.zero && Input.touches.Length != 0){
-            swipeDelta = Input.touches[0].position - startTouch;
-        }
+        if (startTouch != Vector2.zero && Input.touches.Length != 0) swipeDelta = Input.touches[0].position - startTouch;
 
         if (swipeDelta.sqrMagnitude > 0){
             float x = swipeDelta.x;
             float y = swipeDelta.y;
-            if (Mathf.Abs(x) > Mathf.Abs(y)){
-                if (x < 0) swipeLeft = true; else swipeRight = true;
+            
+            if (x < 0){
+                swipeLeft = true;
             } else {
-                if (y < 0) swipeDown = true; else swipeUp = true;
+                swipeRight = true;
+            } 
+
+            if (y < 0){
+                swipeDown = true;
+            } else {
+                swipeUp = true;
             }
             startTouch = swipeDelta = Vector2.zero;
         }
+        if (Input.touchCount == 1){
+            touch = Input.GetTouch(0);
+            touchPosition = touch.position;
+            if (Input.GetTouch(0).phase == TouchPhase.Ended) touchPosition.x = 0;
+        }
+    }
+
+    void Update(){
+        ResetControls();
+        UpdateMobile();
+        CheckIfInExplore();
+        CheckForEnter();
+        TurnRight();
+        TurnLeft();
+        MoveForward();
+        MoveBackward();
+        CheckForNotMoving();
+        CheckForFirstStep();
+        CheckForSprint();
+        CheckForDoubleRight();
+        CheckForDoubleLeft();
+        CheckForZoom();
+        CheckForCombat();
+        CheckForStealth();
+        CheckForPause();
+        CheckForMenu();
     }
 }

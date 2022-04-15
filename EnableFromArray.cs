@@ -4,23 +4,9 @@ using UnityEngine;
 
 public class EnableFromArray : MonoBehaviour
 {
-    public GameObject ToBeEnabled;
-    public GameObject[] ToBeEnabledArray;
-    public GameObject ToBeDisabled;
-    bool hasBeenEnabled;
+    [SerializeField] GameObject[] gameObjects;
+    [SerializeField] bool trigger;
 
-    void OnTriggerEnter()
-    {
-        if (!hasBeenEnabled)
-        {
-            ToBeEnabled = ToBeEnabledArray[Random.Range(0, ToBeEnabledArray.Length)];
-            ToBeEnabled.SetActive(true);
-            hasBeenEnabled = true;
-        }
-    }
-
-    void OnTriggerExit()
-    {
-        ToBeDisabled.SetActive(false);
-    }
+    public void EnableAllInArray(){ foreach (GameObject gameObject in gameObjects) gameObject.SetActive(true);}
+    void OnTriggerEnter(Collider other){ if (other.gameObject.name == "Player" && trigger) EnableAllInArray();}
 }

@@ -4,40 +4,35 @@ using UnityEngine;
 
 public class AmbienceRepeater : MonoBehaviour
 {
+    [SerializeField] AudioSource[] audioSources;
+    [SerializeField] AudioClip[] ambienceClips;
+    public IEnumerator ambienceCoroutine;
+    public bool stopped = false;
+    public bool turnedOn;
 
-    private AudioSource audioSource;
-    public AudioClip[] ambience;
-    public bool hasPlayedSound;
-    private float waitTime;
-    public float minWait = 30;
-    public float maxWait = 60;
-    public bool stopAmbience, dontPlayAtStart;
-
-    
-    void Start()
-    {
-        audioSource = GetComponent<AudioSource>();
-    }
-    
-    void Update()
-    {
-        if (!hasPlayedSound && !stopAmbience && !dontPlayAtStart)
-        {
-            PlaySound();
-        }
+    IEnumerator WaitThenPlay(){
+        yield return new WaitForSeconds(2f);
+        if (turnedOn) StartCoroutine(ambienceCoroutine);
     }
 
-    void PlaySound()
-    {
-        audioSource.PlayOneShot(ambience[Random.Range(0, ambience.Length)]);
-        hasPlayedSound = true;
-        waitTime = Random.Range(minWait, maxWait);
-        StartCoroutine(waitThenPlay());
+    void Awake(){
+        ambienceCoroutine = PlayAllAmbiences();
     }
 
-    IEnumerator waitThenPlay()
-    {
-        yield return new WaitForSeconds(waitTime);
-        hasPlayedSound = false;
+    void Start(){
+        StartCoroutine(WaitThenPlay());
+    }
+
+    public void StopAllSources(){
+        Debug.Log("stopped");
+        stopped = true;
+        foreach (AudioSource audioSource in audioSources) audioSource.Stop();
+    }
+
+    IEnumerator PlayAllAmbiences(){
+        foreach (AudioSource audioSource in audioSources) audioSource.PlayOneShot(ambienceClips[Random.Range(0, ambienceClips.Length)]);
+        yield return new WaitForSeconds(ambienceClips[0].length/2 + Random.Range(-2f, 2f));    
+        ambienceCoroutine = PlayAllAmbiences();
+        if(!stopped) StartCoroutine(ambienceCoroutine);
     }
 }

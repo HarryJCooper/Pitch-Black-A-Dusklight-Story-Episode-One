@@ -5,5 +5,4 @@ using UnityEngine;
 public class OcclusionObject : MonoBehaviour
 {
     public float volumeReduction, frequencyReduction;
-
 }
