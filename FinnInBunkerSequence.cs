@@ -9,11 +9,13 @@ public class FinnInBunkerSequence : SequenceBase
     [SerializeField] EnemyFootsteps finnFootsteps;
     [SerializeField] AudioMixer audioMixer;
     [SerializeField] AudioClip[] finnClips, finnLoopClips, protagClips, doorClips, radioClips, playerFootstepClips, finnDesertFootstepClips;
-    [SerializeField] AudioClip openingStatement, innerDoorOpeningClip;
+    [SerializeField] AudioClip openingStatement, innerDoorOpeningClip, glassClip, thereYouGoClip;
     [SerializeField] AudioSourceContainer audioSourceContainer;
-    [SerializeField] AudioSource protagReverbSource, initialSource, innerDoorSource;
+    [SerializeField] AudioSource protagReverbSource, initialSource, innerDoorSource, glassSource;
     int finnLoopClipsInt = 0;
     [SerializeField] float maxDistanceFromPlayer;
+    float distanceFromPlayer;
+    bool checkDistanceAgain;
     [SerializeField] GameObject door, innerDoor;
     [SerializeField] Controls controls;
     Transform finnTransform, doorTransform, playerTransform;
@@ -21,9 +23,9 @@ public class FinnInBunkerSequence : SequenceBase
     public SecretSequence secretSequence;
     [SerializeField] AudioController audioController;
     [SerializeField] PBFootstepSystem pBFootstepSystem;
-    [SerializeField] AmbienceRepeater drippingRepeater, electricalRepeater, desertRepeater, openDoorAmbienceRepeater, bunkerAmbienceRepeater; 
+    [SerializeField] AmbienceRepeater drippingRepeater, electricalRepeater, openDoorAmbienceRepeater, bunkerAmbienceRepeater, desertAmbienceRepeater; 
     [SerializeField] SaveAndLoadEncampment saveAndLoadEncampment;
-    [SerializeField] GameObject bunkerObject;
+    [SerializeField] GameObject bunkerObject, desertAmbienceObject;
 
     int RandomNumberGen(){
         int randomInt = Random.Range(0, finnLoopClips.Length);
@@ -31,14 +33,13 @@ public class FinnInBunkerSequence : SequenceBase
         return randomInt;
     }
 
-    void Awake(){ active = 1;}
-
     void PlayOneShotWithVerb(AudioClip clip){
         audioSourceContainer.protagSource.PlayOneShot(clip);
         protagReverbSource.PlayOneShot(clip);
     }
 
     void Setup(){
+        if (finished == 1) return;
         StartCoroutine(bunkerAmbienceRepeater.ambienceCoroutine);
         audioMixer = protagReverbSource.outputAudioMixerGroup.audioMixer;
         controls.canZoom = false;
@@ -53,11 +54,12 @@ public class FinnInBunkerSequence : SequenceBase
         doorTransform = door.transform;
         playerTransform = audioSourceContainer.protagSource.transform;
         finnTransform.position = new Vector3(0f, 0.3f, 10f);
-        playerTransform.position = new Vector3(0f, 0.3f, -30f);
+        playerTransform.position = new Vector3(0f, 0.3f, -40f);
         pBFootstepSystem.footstepClips = playerFootstepClips;
         StartCoroutine(drippingRepeater.ambienceCoroutine);
         StartCoroutine(electricalRepeater.ambienceCoroutine);
         checkPosition = true;
+        desertAmbienceObject.SetActive(false);
     }
 
     void MoveFinnTowardsRadio(){ finnTransform.position = Vector3.MoveTowards(finnTransform.position, audioSourceContainer.radioSource.transform.position, 0.1f);}
@@ -82,7 +84,7 @@ public class FinnInBunkerSequence : SequenceBase
     }
 
     public override IEnumerator Sequence(){
-        if (finished == 0){
+        if (finished == 0 && (PlayerPrefs.GetInt("finnInBunkerSequence") == 0)){
             audioController.increaseCutOffAtStart = false;
             if (skipIntroMusic && Application.isEditor){
                 yield return new WaitForSeconds(0.5f);
@@ -142,8 +144,16 @@ public class FinnInBunkerSequence : SequenceBase
         // His voice gets louder as his thoughts become clearer and more confident as his speech practice develops.
         // Finn
         // No longer will they… torture and decimate our people. No longer wi… aggghh
+        glassSource.gameObject.SetActive(true);
         audioSourceContainer.finnSource.PlayOneShot(finnClips[4]);
-        yield return new WaitForSeconds(finnClips[4].length + Random.Range(1f, 2f));
+        yield return new WaitForSeconds(finnClips[4].length);
+        if (breakLoop){
+            glassSource.gameObject.SetActive(false);
+            yield break;
+        } 
+        glassSource.PlayOneShot(glassClip);
+        yield return new WaitForSeconds(glassClip.length);
+        glassSource.gameObject.SetActive(false);
         if (breakLoop) yield break;
 
         // The voice lets out an angry grunt as he descends back into an unconfident frustrated stupor. He curses, pacing around the room like a frustrated child. 
@@ -171,6 +181,7 @@ public class FinnInBunkerSequence : SequenceBase
         audioSourceContainer.finnSource.Stop();
         yield return new WaitForSeconds(innerDoorOpeningClip.length);
         controls.inCutscene = true;
+        audioMixer.SetFloat("Finn_Vol", -5f);
         playerTransform.position = new Vector3(0, 0.3f, 0);
         // Protag 
         // Nice speech, nearly had me listening, I’m almost inspired. 
@@ -219,6 +230,7 @@ public class FinnInBunkerSequence : SequenceBase
         moveFinnTowardsRadio = false;
         audioSourceContainer.radioSource.Stop();
         audioSourceContainer.radioSource.PlayOneShot(radioClips[1]);
+        yield return new WaitForSeconds(2f);
             // turn radio off sound.
         // /a loud action interrupts the tense silence… maybe a bang at the door (would need to shuffle the next bang around – the flick of the radio turning off maybe too subtle)- Severe white noise cut off with glitchy fx and delayed emperor voice.
         // Finn speaks in a very sincere tone. A sense of desperation breaks through every now and again, but is covered by his needs to appear strong as a leader. 
@@ -304,11 +316,16 @@ public class FinnInBunkerSequence : SequenceBase
         moveFinnTowardsRadio = true;
         yield return new WaitForSeconds(3f);
         moveFinnTowardsRadio = false;
-        audioSourceContainer.doorSource.PlayOneShot(doorClips[0]);
+        audioSourceContainer.radioSource.PlayOneShot(doorClips[0]);
         yield return new WaitForSeconds(doorClips[0].length);
         audioSourceContainer.doorSource.PlayOneShot(doorClips[1]);
+        yield return new WaitForSeconds(doorClips[1].length);
+        yield return new WaitForSeconds(0.8f);
+        audioSourceContainer.doorSource.PlayOneShot(doorClips[2]);
         audioMixer.SetFloat("Room_Vol", -50f);
         moveDoorOpen = true;
+        desertAmbienceObject.SetActive(false);
+        StartCoroutine(desertAmbienceRepeater.ambienceCoroutine);
         StartCoroutine(openDoorAmbienceRepeater.ambienceCoroutine);
         yield return new WaitForSeconds(6f);
         moveDoorOpen = false;
@@ -321,22 +338,25 @@ public class FinnInBunkerSequence : SequenceBase
         bunkerAmbienceRepeater.stopped = true;
         finnFootsteps.footstepClips = finnDesertFootstepClips;
         moveFinnForward = true;
-        yield return new WaitForSeconds(6f);
+        yield return new WaitForSeconds(2f);
+        controls.inCutscene = false;
+        yield return new WaitForSeconds(4f);
         moveFinnForward = false;
         StartCoroutine(SequenceLoopTwo());
     }
 
     IEnumerator SequenceLoopTwo(){
-        controls.inCutscene = false;
-        if (Vector3.Distance(finnTransform.position, playerTransform.position) > maxDistanceFromPlayer){
+        if (Vector3.Distance(finnTransform.position, playerTransform.position) >= maxDistanceFromPlayer){
+            checkDistanceAgain = true;
+            Debug.Log("Checking distance again");
             // Finn 
             // Come on ya dafty, this way! etc.
             finnLoopClipsInt = RandomNumberGen();
             audioSourceContainer.finnSource.PlayOneShot(finnLoopClips[finnLoopClipsInt]);
             yield return new WaitForSeconds(7.5f);
+            bunkerAmbienceRepeater.gameObject.SetActive(false);
             StartCoroutine(SequenceLoopTwo());
-        } else {
-            StartCoroutine(SequenceTwo());
+            // this loop gets stopped by the update
         }
     }
 
@@ -344,7 +364,12 @@ public class FinnInBunkerSequence : SequenceBase
         StopCoroutine(drippingRepeater.ambienceCoroutine);
         StopCoroutine(electricalRepeater.ambienceCoroutine);
         StopCoroutine(openDoorAmbienceRepeater.ambienceCoroutine);
-        controls.inCutscene = true;
+        audioSourceContainer.finnSource.Stop();
+        Debug.Log("Sequence two");
+        // Finn
+        // There you go
+        audioSourceContainer.finnSource.PlayOneShot(thereYouGoClip);
+        yield return new WaitForSeconds(thereYouGoClip.length);
         // Finn
         // Donnie’ll hook you up with a quadbike but *tut* I don’t know whether it’s ready yet. Get chatting to the others if you have to wait. Oh, and Lara said she wanted to see how well you actually fight… 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[19]);
@@ -369,14 +394,17 @@ public class FinnInBunkerSequence : SequenceBase
         yield return new WaitForSeconds(6f);
         moveFinnToCentreOfBunker = false;
         moveDoorShut = true;
-        audioSourceContainer.doorSource.PlayOneShot(doorClips[0]);
+        audioSourceContainer.doorSource.gameObject.SetActive(true);
         audioSourceContainer.doorSource.PlayOneShot(doorClips[1]);
+        yield return new WaitForSeconds(doorClips[1].length);
+        audioSourceContainer.doorSource.PlayOneShot(doorClips[2]);
         yield return new WaitForSeconds(6f);
         moveDoorShut = false;
+        // audioSourceContainer.doorSource.gameObject.SetActive(false);
     }
 
     public void Finished(){
-        audioSourceContainer.protagSource.PlayOneShot(cutsceneExitClip);
+        audioSourceContainer.protagActionSource.PlayOneShot(cutsceneExitClip);
         secretSequence.active = 1;
         StartCoroutine(secretSequence.Sequence());
         finished = 1;
@@ -399,5 +427,15 @@ public class FinnInBunkerSequence : SequenceBase
             breakLoop = true;
             StartCoroutine(SequenceContinue());
         } 
+
+        if (checkDistanceAgain){
+            distanceFromPlayer = Vector3.Distance(finnTransform.position, playerTransform.position);
+            if (distanceFromPlayer < maxDistanceFromPlayer){
+                Debug.Log("has reached < maxDistanceFromPlayer");
+                checkDistanceAgain = false;
+                controls.inCutscene = true;
+                StartCoroutine(SequenceTwo());;
+            }
+        }
     }
 }

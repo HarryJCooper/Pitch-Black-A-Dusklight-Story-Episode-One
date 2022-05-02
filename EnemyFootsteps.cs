@@ -28,14 +28,14 @@ public class EnemyFootsteps : MonoBehaviour
         if (walkDist > 4){
             walkDist = 0;
             recentPosition = this.transform.position;
-            newMaxDist = maxDist*Random.Range(0.96f, 1.04f);
+            newMaxDist = maxDist*Random.Range(0.9f, 1.1f);
         } 
         if (walkDist > newMaxDist && walkDist < 4){
             footstepInt = RandomNumberGen(); 
             audioSource.PlayOneShot(footstepClips[footstepInt], Random.Range(0.8f, 1f));
             walkDist = 0;
             recentPosition = this.transform.position;
-            newMaxDist = maxDist*Random.Range(0.96f, 1.04f);
+            newMaxDist = maxDist*Random.Range(0.9f, 1.1f);
         }
     }
 }

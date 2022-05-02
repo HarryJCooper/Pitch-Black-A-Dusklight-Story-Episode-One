@@ -9,6 +9,7 @@ public class LaraCombatSequence : MonoBehaviour
     float angleToEnemy, enemyAttackSpeed, distanceFromPlayer, musicVol;
     Controls controls;
     AudioSource playerSource, enemySource;
+    [SerializeField] AudioSource playerActionSource;
     bool moveTowards, moveBackAndToSide, moveToPointOne, moveToPointTwo, reachedPointOne, reachedPointTwo, enemyInRange, canParry, attacking, reduceMusic;
     public bool enteredCombat;
     int playerHealth = 5, attackPhase, playerDiedCount;
@@ -17,10 +18,15 @@ public class LaraCombatSequence : MonoBehaviour
     AudioMixer audioMixer;
     [SerializeField] DarkVsLight darkVsLight;
     [SerializeField] GameObject ringObject;
+    [SerializeField] AudioClip[] playerPunchClips;
+    [SerializeField] AudioClip[] laraPunchClips;
+    [SerializeField] AudioController audioController;
+    [SerializeField] AudioClip cutsceneExitClip;
+    [SerializeField] AuditoryZoomSequence auditoryZoomSequence;
 
     #region COMBAT AUDIOCLIPS
-    [SerializeField] AudioClip playerAttackClip, playerParryClip, playerIsHitByAttackClip, enemyBeenKilledClip, combatMusicClip;
-    [SerializeField] AudioClip[] enemyBeenParriedClips, enemyIsHitByAttackClips, enemyAttackClips;
+    [SerializeField] AudioClip playerParryClip, enemyBeenKilledClip, combatMusicClip, enterTheRingClip;
+    [SerializeField] AudioClip[] enemyBeenParriedClips, enemyIsHitByAttackClips, enemyAttackClips, playerIsHitByAttackClips, playerAttackClips;
     #endregion
 
     void Start(){
@@ -104,7 +110,7 @@ public class LaraCombatSequence : MonoBehaviour
     IEnumerator EnterCombat(){
         if (enteredCombat){
             controls.inCombat = true;  
-            musicSource.PlayOneShot(combatMusicClip, 0.2f);
+            audioController.PlayMusic("Combat", 0.2f);
             AssignCoroutine("MoveTowards");
             yield break;
         }
@@ -137,7 +143,8 @@ public class LaraCombatSequence : MonoBehaviour
     // ________________ // 
 
     IEnumerator EnemyHitPlayer(){
-        enemySource.PlayOneShot(playerIsHitByAttackClip);
+        enemySource.PlayOneShot(playerIsHitByAttackClips[Random.Range(0, playerIsHitByAttackClips.Length)]);
+        enemySource.PlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
         playerSource.Stop();
         if (playerAttackCoroutine != null) StopCoroutine(playerAttackCoroutine);
         playerHealth -= 1;
@@ -147,7 +154,7 @@ public class LaraCombatSequence : MonoBehaviour
     }
 
     IEnumerator KnockbackPlayer(){
-        playerSource.transform.position = Vector3.MoveTowards(playerSource.transform.position, enemySource.transform.position, -8f);
+        enemySource.transform.position = Vector3.MoveTowards(enemySource.transform.position, playerSource.transform.position, -8f);
         yield return new WaitForSeconds(1f);
         AssignCoroutine("MoveTowards");
         yield break;
@@ -188,15 +195,19 @@ public class LaraCombatSequence : MonoBehaviour
 
     IEnumerator EnemyKilled(){
         reduceMusic = true;
+        yield return new WaitForSeconds(enemyIsHitByAttackClips[0].length + 0.5f);  
         enemySource.PlayOneShot(enemyBeenKilledClip);
         yield return new WaitForSeconds(enemyBeenKilledClip.length);
         reduceMusic = false;
         musicSource.Stop();
-        musicVol = 0;
-        enemySource.outputAudioMixerGroup.audioMixer.SetFloat("Music_Vol", musicVol);
+        audioMixer.SetFloat("Music_Vol", 0f);
         darkVsLight.playerDarkness += 1;
         controls.inCombat = false;
         controls.canZoom = true;
+        playerActionSource.PlayOneShot(enterTheRingClip, 0.2f);
+        yield return new WaitForSeconds(enterTheRingClip.length);
+        playerActionSource.PlayOneShot(cutsceneExitClip);
+        auditoryZoomSequence.CheckIfShouldStart();
         ringObject.SetActive(false);
     }
     #endregion
@@ -204,14 +215,15 @@ public class LaraCombatSequence : MonoBehaviour
     #region PLAYER COMBAT FLOW
     IEnumerator PlayerAttack(){ 
         attacking = true;
-        playerSource.PlayOneShot(playerAttackClip);
-        yield return new WaitForSeconds(2f);
+        playerSource.PlayOneShot(playerAttackClips[Random.Range(0, playerAttackClips.Length)]);
+        yield return new WaitForSeconds(1.2f);
         if (enemyInRange) StartCoroutine(PlayerHitEnemy());
         attacking = false;
     }
 
     IEnumerator PlayerHitEnemy(){
         attackPhase += 1;
+        playerActionSource.PlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
         enemySource.Stop();
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
         enemySource.PlayOneShot(enemyIsHitByAttackClips[Random.Range(0, enemyIsHitByAttackClips.Length)]);

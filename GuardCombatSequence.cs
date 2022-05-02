@@ -6,6 +6,7 @@ public class GuardCombatSequence : MonoBehaviour
 {
     [SerializeField] float maxDistanceFromPlayer = 3, enemyMoveSpeed;
     float angleToEnemy, enemyAttackSpeed;
+    [SerializeField] Transform wallTransform;
     Controls controls;
     AudioSource playerSource;
     public AudioSource enemySource;
@@ -33,7 +34,8 @@ public class GuardCombatSequence : MonoBehaviour
     #region COMBAT AUDIOCLIPS
     [SerializeField] AudioClip playerParryClip, playerMissedParryClip, playerRanAwayClip, playerBeenKilledClip,
         enemyAttackClip, enemyBeenKilledClip, enemyLostPlayerClip, drawBatonClip;
-    [SerializeField] AudioClip[] playerAttackClips, playerIsHitByAttackClips, enemyBeenParriedClips, enemyFoundPlayerClips, enemyTauntClips, enemyAttackClips, enemyHitByAttackClips, enemyPatrolClips, guardClips, playerClips;
+    [SerializeField] AudioClip[] playerAttackClips, playerIsHitByAttackClips, playerPunchClips,
+    enemyBeenParriedClips, enemyFoundPlayerClips, enemyTauntClips, enemyAttackClips, enemyHitByAttackClips, enemyPatrolClips, guardClips, playerClips;
     #endregion
 
     int RandomNumberGen(string clipType){
@@ -313,7 +315,7 @@ public class GuardCombatSequence : MonoBehaviour
             yield return new WaitForSeconds(enemyFoundPlayerClips[1].length);
             playerSource.PlayOneShot(playerFoundWalkingClip);
         }
-        audioController.PlayMusic("combat");
+        audioController.PlayMusic("combat", 0.15f);
         AssignCoroutine("MoveTowards");
         yield break;
     }
@@ -356,7 +358,12 @@ public class GuardCombatSequence : MonoBehaviour
     }
 
     IEnumerator KnockbackPlayer(){
-        playerSource.transform.position = Vector3.MoveTowards(playerSource.transform.position, enemySource.transform.position, -8f);
+        Vector3 newPosition = Vector3.MoveTowards(playerSource.transform.position, enemySource.transform.position, -8f);
+        if (newPosition.z < wallTransform.position.z){
+            enemySource.transform.position = newPosition;
+        } else {
+            playerSource.transform.position = new Vector3(newPosition.x, newPosition.y, wallTransform.position.z);
+        }
         yield return new WaitForSeconds(1f);
         AssignCoroutine("MoveTowards");
         yield break;
@@ -433,7 +440,7 @@ public class GuardCombatSequence : MonoBehaviour
             playerHealth = 3 + darkVsLight.playerDarkness;
             attackPhase = 0;
             AssignCoroutine("MoveTowards");
-            audioController.PlayMusic("combat");
+            audioController.PlayMusic("combat", 0.15f);
             playerDiedCount += 1;
             yield break;
         } 
@@ -451,7 +458,7 @@ public class GuardCombatSequence : MonoBehaviour
             playerHealth = 3 + darkVsLight.playerDarkness;
             attackPhase = 0;
             AssignCoroutine("MoveTowards");
-            audioController.PlayMusic("combat");
+            audioController.PlayMusic("combat", 0.15f);
             playerDiedCount += 1;
             yield break;
         } 
@@ -487,6 +494,7 @@ public class GuardCombatSequence : MonoBehaviour
 
     IEnumerator PlayerHitEnemy(){
         attackPhase += 1;
+        playerSource.PlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
         enemySource.Stop();
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
         enemySource.PlayOneShot(enemyHitByAttackClips[Random.Range(0, enemyHitByAttackClips.Length)]);
@@ -495,7 +503,12 @@ public class GuardCombatSequence : MonoBehaviour
     }
 
     IEnumerator KnockbackEnemy(){
-        enemySource.transform.position = Vector3.MoveTowards(enemySource.transform.position, playerSource.transform.position, -8f);
+        Vector3 newPosition = Vector3.MoveTowards(enemySource.transform.position, playerSource.transform.position, -8f);
+        if (newPosition.z < wallTransform.position.z){
+            enemySource.transform.position = newPosition;
+        } else {
+            enemySource.transform.position = new Vector3(newPosition.x, newPosition.y, wallTransform.position.z - 10f);
+        }
         AssignCoroutine("MoveBackAndToSide");
         yield break;
     }
@@ -521,7 +534,7 @@ public class GuardCombatSequence : MonoBehaviour
     IEnumerator DistanceFromEnemySignifier(){
         yield return new WaitForSeconds(distanceFromPlayer / 30); 
         enemySource.PlayOneShot(beepingClip);
-        if (!audioController.musicSource.isPlaying) audioController.PlayMusic("stealth");
+        if (!audioController.musicSource.isPlaying) audioController.PlayMusic("stealth", 0.05f);
         if (controls.crouching && controls.inStealth){
             StartCoroutine(DistanceFromEnemySignifier()); 
             yield break;

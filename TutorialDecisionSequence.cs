@@ -26,12 +26,7 @@ public class TutorialDecisionSequence : SequenceBase
         audioMixer = swingSource.outputAudioMixerGroup.audioMixer;
         audioMixer.SetFloat("WalkingTutorialReverb_Vol", -80f);
         audioMixer.SetFloat("StealthTutorialReverb_Vol", -80f);
-        audioMixer.SetFloat("CombatTutorialReverb_Vol", -80f);
         if (controls.mobile) motherClips[1] = mobileClips[0];
-        controls.inCutscene = true;
-        controls.canZoom = false;
-        pBFootstepSystem.canRotate = false;
-        pBFootstepSystem.canMove = false;
         swingSource.loop = true;
         swingSource.Play();
         windSource.loop = true;
@@ -44,6 +39,10 @@ public class TutorialDecisionSequence : SequenceBase
             SkipToNextSequence();
             yield break;
         }
+        controls.inCutscene = true;
+        controls.canZoom = false;
+        pBFootstepSystem.canRotate = false;
+        pBFootstepSystem.canMove = false;
         yield return new WaitForSeconds(10f);
         Setup();
         // INT. HOUSE – DAY 

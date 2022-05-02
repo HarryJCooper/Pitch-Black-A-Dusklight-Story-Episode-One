@@ -108,14 +108,14 @@ public class AudioController : MonoBehaviour
         increaseLowpass = false;
     }
 
-    public void PlayMusic(string m_musicType){
+    public void PlayMusic(string m_musicType, float volume){
         musicSource.loop = true;
         if (m_musicType == "combat"){
             musicSource.clip = combatMusicClip;
-            musicSource.volume = 0.2f;
+            musicSource.volume = volume;
         } else if (m_musicType == "stealth"){
             musicSource.clip = stealthMusicClip;
-            musicSource.volume = 0.05f;
+            musicSource.volume = volume;
         } else if (m_musicType == "menu"){
             musicSource.clip = menuMusicClip;
         }
@@ -163,7 +163,7 @@ public class AudioController : MonoBehaviour
         SetCutOffToZero();
         if (!increaseCutOffAtStart) yield break;
         yield return new WaitForSeconds(5f);
-        StartCoroutine(IncreaseMasterCutOff(20f)); // TODO - deal with this bullsheesh
+        StartCoroutine(IncreaseMasterCutOff(12f));
     }
 
     void Start(){

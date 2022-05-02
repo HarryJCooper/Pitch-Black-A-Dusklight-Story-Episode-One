@@ -5,7 +5,7 @@ using DearVR;
 
 public class Explosion : MonoBehaviour
 {
-    [SerializeField] AudioSource playerSource, pumpingStationSource, tannoy1Source, malfunctioningDoorSource;
+    [SerializeField] AudioSource playerSource, playerActionSource, pumpingStationSource, tannoy1Source, malfunctioningDoorSource;
     [SerializeField] AmbienceRepeater desertAmbienceRepeater, pumpingStationAmbienceRepeater;
     [SerializeField] AudioClip playerClip, stopClip, explosionClip;
     [SerializeField] AudioClip[] playerFootstepClips;
@@ -19,6 +19,7 @@ public class Explosion : MonoBehaviour
     [SerializeField] DisableFromArray disableFromArray;
     [SerializeField] EnableFromArray enableFromArray;
     [SerializeField] ReverbManager reverbManager;
+    [SerializeField] DesertBoundary desertBoundary;
     public int finished;
 
     void OnTriggerEnter(Collider other){
@@ -35,9 +36,11 @@ public class Explosion : MonoBehaviour
     }
 
     IEnumerator Sequence(){
+        desertBoundary.turnedOn = false;
+        desertBoundary.gameObject.SetActive(false);
         // INT. PUMPING STATION – NIGHT
         // HARRY NOTE - Player walks through door and gets blasted by explosion (probz behind), then wakes up. Says something like: 
-        playerSource.PlayOneShot(explosionClip);
+        playerActionSource.PlayOneShot(explosionClip);
         tannoy1Source.Stop();
         malfunctioningDoorSource.Stop();
         StopCoroutine(guardCombatSequence.enemyCoroutine);
@@ -67,6 +70,4 @@ public class Explosion : MonoBehaviour
         pBFootstepSystem.canRotate = true;
         pBFootstepSystem.canMove = true;
     }
-
-
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Dia5ogueSequence : MonoBehaviour
 {
-    [SerializeField] AudioSource protagSource;
+    [SerializeField] AudioSource protagSource, protagActionSource;
     [SerializeField] AudioClip protagClip, windClip;
     [SerializeField] Controls controls;
     public int finished;
@@ -15,7 +15,7 @@ public class Dia5ogueSequence : MonoBehaviour
         if (finished == 0 && !protagSource.isPlaying && controls.inExplore){
             finished = 1;
             // Gush of wind triggers this dialogue. 
-            protagSource.PlayOneShot(windClip);
+            protagActionSource.PlayOneShot(windClip);
             // Protag
             // Brrr, cold out here, 
             protagSource.PlayOneShot(protagClip);

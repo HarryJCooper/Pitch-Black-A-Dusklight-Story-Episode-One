@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 public class LeftWorkerSequence : MonoBehaviour
 {
-    [SerializeField] AudioSource tannoySource, trappedWorkerSource, protagSource, protagReverbSource, finnSource, musicSource, securityForcesSource, alarmSource, doorSource;
+    [SerializeField] AudioSource tannoySource, trappedWorkerSource, protagSource, protagActionSource, protagReverbSource, finnSource, musicSource, securityForcesSource, alarmSource, doorSource;
     [SerializeField] AudioClip[] tannoyClips, protagClips, finnClips;
     [SerializeField] AudioClip flashbackClip, trappedWorkerScream, alarmClip, securityForcesClip, doorSlideClip, quadbikePullUpClip, outroThemeClip;
     [SerializeField] Controls controls;
@@ -90,7 +90,7 @@ public class LeftWorkerSequence : MonoBehaviour
         // ----------------------------------
         // Psychotic episode #1
         // Suddenly, audio denotes anther flashback type sequence, the audio is harder and more unforgiving than the director flashbacks. The protagonist is younger here and appears to be in an argument with one of his brothers. 
-        protagSource.PlayOneShot(flashbackClip);
+        protagActionSource.PlayOneShot(flashbackClip);
         yield return new WaitForSeconds(flashbackClip.length - 10f);
 
         // Charlie

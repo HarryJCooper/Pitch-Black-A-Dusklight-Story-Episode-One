@@ -40,7 +40,7 @@ public class StealthTutorial : MonoBehaviour
         if (playerCrouching){
             currentDetectionDistance = detectionDistance / 2;
             if (!playingMusic){
-                audioController.PlayMusic("stealth");
+                audioController.PlayMusic("stealth", 0.05f);
                 playingMusic = true;
             }
         } else {

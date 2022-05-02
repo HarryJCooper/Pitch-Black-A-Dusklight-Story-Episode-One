@@ -23,6 +23,11 @@ public class AmbienceRepeater : MonoBehaviour
         StartCoroutine(WaitThenPlay());
     }
 
+    public void PlayAllSources(){
+        stopped = false;
+        StartCoroutine(PlayAllAmbiences());
+    }
+
     public void StopAllSources(){
         Debug.Log("stopped");
         stopped = true;
@@ -30,9 +35,11 @@ public class AmbienceRepeater : MonoBehaviour
     }
 
     IEnumerator PlayAllAmbiences(){
-        foreach (AudioSource audioSource in audioSources) audioSource.PlayOneShot(ambienceClips[Random.Range(0, ambienceClips.Length)]);
+        foreach (AudioSource audioSource in audioSources){
+            if (audioSource.gameObject.activeInHierarchy) audioSource.PlayOneShot(ambienceClips[Random.Range(0, ambienceClips.Length)]);
+        }
         yield return new WaitForSeconds(ambienceClips[0].length/2 + Random.Range(-2f, 2f));    
         ambienceCoroutine = PlayAllAmbiences();
-        if(!stopped) StartCoroutine(ambienceCoroutine);
+        if(!stopped && this.gameObject.activeSelf) StartCoroutine(ambienceCoroutine);
     }
 }

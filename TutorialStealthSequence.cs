@@ -38,8 +38,8 @@ public class TutorialStealthSequence : SequenceBase
         audioMixer = motherSource.outputAudioMixerGroup.audioMixer;
         audioMixer.SetFloat("WalkingTutorialReverb_Vol", -80f);
         audioMixer.SetFloat("StealthTutorialReverb_Vol", 0f);
-        audioMixer.SetFloat("CombatTutorialReverb_Vol", -80f);
         audioMixer.SetFloat("Mother_InitialVol", 10f);
+        audioMixer.SetFloat("OutsideDoor_Vol", 0f);
         doorObject.SetActive(true);
         motherSource.transform.position = new Vector3(-5, 0.3f, 10); // sets Mum behind the wall
         playerSource.transform.position = new Vector3(7.1f, 0.3f, -5.4f); // resets player position

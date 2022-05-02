@@ -27,7 +27,7 @@ public class PBFootstepSystem : MonoBehaviour
 
     void CheckIfCanMove(){
         if (controls.inCutscene || controls.paused) {
-            canMove = false; 
+            canMove = false;
             return;
         }
         canMove = true;

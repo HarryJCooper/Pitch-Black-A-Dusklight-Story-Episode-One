@@ -5,12 +5,12 @@ using UnityEngine.Audio;
 
 public class TutorialWalkingSequence : SequenceBase
 {
-    bool successClipHasPlayed, hasPlayedSqueakyToy, hasPlayedCar, moveToyCar, hasStarted;
+    bool successClipHasPlayed, hasPlayedSqueakyToy, hasPlayedCar, moveToyCar, moveTrain, hasStarted;
     [SerializeField] bool skip;
     [SerializeField] AudioClip eerieDroneClip, eerieDroneClipShort, nurseryRhyme, forwardMobileClip, forwardComputerClip, forwardMobileClip1, forwardComputerClip1, 
-    rotateMobileClip0, rotateComputerClip0, rotateMobileClip1, rotateComputerClip1, successClip, squeakyToyClip, toyCarClip;
+    rotateMobileClip0, rotateComputerClip0, rotateMobileClip1, rotateComputerClip1, successClip, squeakyToyClip, toyCarClip, trainClip;
     [SerializeField] private AudioClip[] motherClips, rattleClips, playerClips, playerFootstepClips;
-    [SerializeField] AudioSource playerSource, motherSource, protagReverbSource, toySource;
+    [SerializeField] AudioSource playerSource, motherSource, protagReverbSource, toySource, trainSource;
     [SerializeField] AudioSource[] radioSources, rumbleSources;
     bool sequenceFinished, motherTalking = true, walk;
     [SerializeField] int i = 0;
@@ -76,14 +76,18 @@ public class TutorialWalkingSequence : SequenceBase
         toySource.transform.position = player.position -= new Vector3(0, -0.5f, 0);
         toySource.PlayOneShot(toyCarClip);
         moveToyCar = true;
-        yield return new WaitForSeconds(toyCarClip.length);
-        moveToyCar = false;
+        yield return new WaitForSeconds(toyCarClip.length/2);
         if (!playerSource.isPlaying) PlayOneShotWithVerb(playerClips[Random.Range(0, playerClips.Length)]);
+        yield return new WaitForSeconds(toyCarClip.length/2);
+        moveToyCar = false;
     }
 
     public IEnumerator StartTrainRumble(){
         yield return new WaitForSeconds(waitTime);
-        if (finished == 1) yield break; 
+        if (finished == 1) yield break;
+        trainSource.transform.position = new Vector3(0, 0.3f, -70);
+        moveTrain = true;
+        trainSource.PlayOneShot(trainClip);
         foreach (AudioSource rumbleSource in rumbleSources) rumbleSource.Play();
         yield return new WaitForSeconds(3f);
         if (!playerSource.isPlaying) PlayOneShotWithVerb(playerClips[Random.Range(0, playerClips.Length)]);
@@ -104,6 +108,7 @@ public class TutorialWalkingSequence : SequenceBase
         audioMixer = motherSource.outputAudioMixerGroup.audioMixer;
         audioMixer.SetFloat("WalkingTutorialReverb_Vol", 0f);
         audioMixer.SetFloat("StealthTutorialReverb_Vol", -80f);
+        audioMixer.SetFloat("OutsideDoor_Vol", -15f);
         motherSource.transform.position = new Vector3(0, 0.3f, 5); // sets Mum in front of player
         playerSource.transform.position = new Vector3(0, 0.3f, 0); // resets player position
         StartCoroutine(StartRadioSources());
@@ -162,7 +167,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator WalkOne(){
         walk = true;
         walkSpeedZ = Random.Range(0.07f, 0.1f);
-        walkTime = Random.Range(4, 7);
+        walkTime = Random.Range(6, 8);
         yield return new WaitForSeconds(walkTime);
         motherTalking = false;
         StartCoroutine(LoopOne());
@@ -182,6 +187,7 @@ public class TutorialWalkingSequence : SequenceBase
 
     IEnumerator SequenceTwo(){
         motherTalking = true;
+        motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         // Mother
         // This way sweety, walk forward. Really think about it. You know how to walk forward; you’ve done it a thousand times already.
         motherSource.PlayOneShot(motherClips[2]);
@@ -193,7 +199,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator WalkTwo(){
         walk = true;
         walkSpeedZ = Random.Range(0.07f, 0.1f);
-        walkTime = Random.Range(4, 7);
+        walkTime = Random.Range(6, 8);
         yield return new WaitForSeconds(walkTime);
         motherTalking = false;
         StartCoroutine(LoopTwo());
@@ -212,6 +218,7 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator SequenceThree(){
+        motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
          // Mother 
         // *Slight whimper* Come on baby. 
@@ -224,7 +231,7 @@ public class TutorialWalkingSequence : SequenceBase
         PlayOneShotWithVerb(playerClips[0]); // Added in baby giggle for fun.
         walk = true;
         walkSpeedZ = Random.Range(0.07f, 0.1f);
-        walkTime = Random.Range(4, 7);
+        walkTime = Random.Range(6, 8);
         yield return new WaitForSeconds(walkTime);
         motherTalking = false;
         StartCoroutine(LoopThree());
@@ -243,6 +250,7 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator SequenceFour(){
+        motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
         // Mother then speaks once more but with a stark outburst of frustration that transitions back to sweet and motherly. As if she is trying to remain calm and sweet. 
         // Mother
@@ -257,7 +265,7 @@ public class TutorialWalkingSequence : SequenceBase
         if (!playerSource.isPlaying) PlayOneShotWithVerb(playerClips[1]);
         walk = true;
         walkSpeedZ = Random.Range(0.07f, 0.1f);
-        walkTime = Random.Range(4, 7);
+        walkTime = Random.Range(6, 8);
         yield return new WaitForSeconds(walkTime);
         motherTalking = false;
         StartCoroutine(LoopFour());
@@ -276,6 +284,7 @@ public class TutorialWalkingSequence : SequenceBase
     }
         
     IEnumerator SequenceSix(){
+        motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
         // The mother now walks around the house. The route is simple and mother explains that left and right rotate the protag. 
         // Mother
@@ -290,7 +299,7 @@ public class TutorialWalkingSequence : SequenceBase
         walk = true;
         walkSpeedX = -0.1f;
         walkSpeedZ = Random.Range(0.07f, 0.1f);
-        walkTime = Random.Range(4, 7);
+        walkTime = Random.Range(6, 8);
         yield return new WaitForSeconds(walkTime);
         motherTalking = false;
         StartCoroutine(LoopSix());
@@ -309,6 +318,7 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator SequenceSeven(){
+        motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
         // Mother
         // Remember how to rotate? We’ve been through this, press left or right to turn and center my voice and then walk straight towards me.  
@@ -323,7 +333,7 @@ public class TutorialWalkingSequence : SequenceBase
         walk = true;
         walkSpeedX = 0.1f;
         walkSpeedZ = Random.Range(0.07f, 0.1f);
-        walkTime = Random.Range(4, 7);
+        walkTime = Random.Range(6, 8);
         yield return new WaitForSeconds(walkTime);
         motherTalking = false;
         StartCoroutine(LoopSeven());
@@ -342,6 +352,7 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator SequenceEight(){
+        motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
         // Mother
         // Well done honey, remember walking isn’t always as easy as you might think, just be patient and use those little ears of yours, you’ll be fine. 
@@ -364,6 +375,7 @@ public class TutorialWalkingSequence : SequenceBase
         StartCoroutine(audioController.ReduceMasterCutOff(7.5f));
         yield return new WaitForSeconds(7.5f);
         audioController.SetCutOffToZero();
+        yield return new WaitForSeconds(2f);
         ambienceRepeater.StopAllSources();
         foreach (AudioSource source in radioSources) source.Stop();
         finished = 1;
@@ -383,5 +395,6 @@ public class TutorialWalkingSequence : SequenceBase
     void FixedUpdate(){ 
         if (walk) Walk(walkSpeedX, walkSpeedZ);
         if (moveToyCar) toySource.transform.position += new Vector3(0.01f, 0, 0.05f);
+        if (moveTrain) trainSource.transform.position += new Vector3(0.75f, 0, 1f);
     }
 }

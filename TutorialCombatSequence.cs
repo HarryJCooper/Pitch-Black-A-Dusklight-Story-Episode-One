@@ -60,7 +60,6 @@ public class TutorialCombatSequence : SequenceBase
         audioMixer.SetFloat("Ambience_Vol", -60f);
         audioMixer.SetFloat("WalkingTutorialReverb_Vol", -80f);
         audioMixer.SetFloat("StealthTutorialReverb_Vol", -80f);
-        audioMixer.SetFloat("CombatTutorialReverb_Vol", 0f);
     }
 
     void MoveKidOne(){
@@ -134,7 +133,7 @@ public class TutorialCombatSequence : SequenceBase
     }
 
     IEnumerator YouCantHitEachOtherIfTooFar(){
-        audioController.PlayMusic("combat");
+        audioController.PlayMusic("combat", 0.15f);
         // You can't hit me from all the way overthere!
         yield return new WaitForSeconds(5f);
         if(tooFarToHit && !kidOneSource.isPlaying && !havePlayedDialogue){
@@ -198,8 +197,8 @@ public class TutorialCombatSequence : SequenceBase
         canParry = false;
         yield return new WaitForSeconds(2f);
         if (!hasParried) {
-             StartCoroutine(EnemyAttack());
-             yield break;
+            StartCoroutine(EnemyAttack());
+            yield break;
         }
         StartCoroutine(AttackHim());
     }

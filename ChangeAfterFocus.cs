@@ -7,7 +7,7 @@ public class ChangeAfterFocus : MonoBehaviour
 {
     AudioMixer audioMixer;
     AudioSource audioSource;
-    [SerializeField] AudioSource playerSource;
+    [SerializeField] AudioSource playerSource, playerActionSource;
     [SerializeField] AudioClip audioClip, reachAudio, hitPOI, unhitPOI;
     public bool hit;
     bool hitPOIPlayed, unhitPOIPlayed;
@@ -24,10 +24,12 @@ public class ChangeAfterFocus : MonoBehaviour
     }
     
     void Update(){
-        if (controls.inZoom && pBFootstepSystem.canMove){
-            Zoom();    
+        if (controls.inZoom){
+            Zoom();
+            Debug.Log("zoomed");
             return;
         }
+        Debug.Log("not in zoom anymore");
         volumeIncreaser = 0;
         audioMixer.SetFloat(poiString, 0); 
         hit = false;
@@ -36,8 +38,9 @@ public class ChangeAfterFocus : MonoBehaviour
     void Zoom(){
         // IDEA- MAKE ZOOMEDVOLUME INCREASE DEPENDANT ON PLAYER DARKNESS
         if (hit){
+            Debug.Log("hit " + this.gameObject.name);
             if (!hitPOIPlayed){
-                playerSource.PlayOneShot(hitPOI);
+                playerActionSource.PlayOneShot(hitPOI);
                 hitPOIPlayed = true;
                 unhitPOIPlayed = false;
             }
@@ -49,7 +52,7 @@ public class ChangeAfterFocus : MonoBehaviour
         audioMixer.SetFloat(poiString, 0); 
         if (!unhitPOIPlayed && controls.inZoom){
             hitPOIPlayed = false;
-            playerSource.PlayOneShot(unhitPOI);
+            playerActionSource.PlayOneShot(unhitPOI);
             unhitPOIPlayed = true;
         }
     }

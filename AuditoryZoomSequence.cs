@@ -1,14 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class AuditoryZoomSequence : SequenceBase
 {
     [SerializeField] AudioSourceContainer audioSourceContainer;
-    [SerializeField] AudioClip[] finnClips, finnClipsMob, finnLoopClips, protagClips, auditoryZoomClips;
-    [SerializeField] AudioClip addedToInventoryClip;
-    bool hasPassed, moveTrain, moveTowardsOne, moveTowardsTwo, checkingForKeys, hasPressedKey, moveFinnToEdgeOfCliff, moveFinnLeft, moveFinnRight;
-    [SerializeField] GameObject edgeOfCliff, train;
+    [SerializeField] AudioClip[] finnClips, finnClipsMob, finnLoopClips, finnFootstepClips, protagClips, auditoryZoomClips;
+    [SerializeField] AudioClip addedToInventoryClip, thereYouGoClip, dusklightStereoClip, trainStereoClip, pumpingStationStereoClip, finnReleaseSpaceBarClip, finnReleaseMobClip;
+    bool hasPassed, moveTrain, moveTowardsOne, moveTowardsTwo, checkingForKeys, hasPressedKey, moveFinnToEdgeOfCliff, moveFinnLeft, moveFinnRight, fadeDusklightAfterHit;
+    [SerializeField] GameObject edgeOfCliff, distantDusklightObject, trainObject, pumpingStationObject;
     [SerializeField] Controls controls;
     [SerializeField] ChangeAfterFocus dusklightFocus, trainFocus, pumpingStationFocus;
     [SerializeField] EncampmentCombatSequence encampmentCombatSequence;
@@ -16,6 +17,11 @@ public class AuditoryZoomSequence : SequenceBase
     [SerializeField] AroundTableSequence aroundTableSequence;
     [SerializeField] QuadbikeFinishedSequence quadbikeFinishedSequence;
     [SerializeField] SaveAndLoadEncampment saveAndLoadEncampment;
+    [SerializeField] AudioMixer audioMixer;
+    [SerializeField] EnemyFootsteps finnFootsteps;
+    [SerializeField] ZoomSound zoomSound;
+    [SerializeField] PBFootstepSystem pBFootstepSystem;
+    float fadeDusklightVol;
     int loopInt;
 
     void Awake(){ active = 0;}
@@ -61,16 +67,19 @@ public class AuditoryZoomSequence : SequenceBase
             0.3f,
             audioSourceContainer.protagSource.transform.position.z + 40);
         if (controls.mobile){
-
             finnClips[9] = finnClipsMob[0];
             finnClips[10] = finnClipsMob[1];
             finnClips[11] = finnClipsMob[2];
             finnClips[16] = finnClipsMob[3];
         }
-
+        trainObject.SetActive(true); 
+        pumpingStationObject.SetActive(true);
+        distantDusklightObject.SetActive(true);
         audioSourceContainer.trainSource.Play();
         audioSourceContainer.dusklightSource.Play();
         audioSourceContainer.pumpingStationSource.Play();
+        audioMixer.SetFloat("Finn_Vol", -5f);
+        finnFootsteps.footstepClips = finnFootstepClips;
     }
 
     void MoveTowards(float maxDistance){
@@ -82,11 +91,15 @@ public class AuditoryZoomSequence : SequenceBase
         if (checkingForKeys){
             if (Input.anyKeyDown || Input.touchCount > 0){
                 hasPressedKey = true;
-           }
+            }
         }
     }
 
     void FixedUpdate(){
+        if (fadeDusklightAfterHit){
+            fadeDusklightVol -= 0.2f;
+            audioMixer.SetFloat("Dusklight_FadeAfterHitVol", fadeDusklightVol);
+        }
         if (moveTowardsOne) MoveTowards(10);
         if (moveTowardsTwo) MoveTowards(3);
         if (moveFinnToEdgeOfCliff) MoveFinnToEdgeOfCliff();
@@ -102,7 +115,7 @@ public class AuditoryZoomSequence : SequenceBase
         moveTowardsOne = true;
         yield return new WaitForSeconds(8f);
         moveTowardsOne = false;
-        audioSourceContainer.protagSource.PlayOneShot(cutsceneEnterClip);
+        audioSourceContainer.protagActionSource.PlayOneShot(cutsceneEnterClip);
         yield return new WaitForSeconds(cutsceneEnterClip.length);
         // Finn
         // Agent, come here!
@@ -116,7 +129,7 @@ public class AuditoryZoomSequence : SequenceBase
             // Or I could come to you… either way’s fine. 
             moveTowardsTwo = true;
             audioSourceContainer.finnSource.PlayOneShot(finnClips[1]);
-            yield return new WaitForSeconds(finnClips[1].length);
+            yield return new WaitForSeconds(finnClips[1].length + 2f);
             moveTowardsTwo = false;
         }
         // Finn
@@ -190,12 +203,15 @@ public class AuditoryZoomSequence : SequenceBase
     }
 
     IEnumerator SequenceTwo(){
+        // Finn
+        // There you go
+        audioSourceContainer.finnSource.PlayOneShot(thereYouGoClip);
+        yield return new WaitForSeconds(thereYouGoClip.length);
         // Finn stops and begins to speak in an energetic, inspired leader like tone, but leans into a sad and hopeless cadence.
         // Finn
         // Dusklight. Listen to it. The light of a million civilians, shrouded in the shadow of the moths. The Church, Lambton Energy, they don’t hear what we hear… they don't understand.  
         audioSourceContainer.finnSource.PlayOneShot(finnClips[8]);
-        yield return new WaitForSeconds(finnClips[8].length);
-
+        yield return new WaitForSeconds(finnClips[8].length + 4f);
         // Finn puts the device on the player and an appropriate foley sound triggers denoting that the player now has it on. 
         // Finn
         // Right, on the device, ok hold on, on the device press 1.
@@ -211,7 +227,7 @@ public class AuditoryZoomSequence : SequenceBase
         if (hasPressedKey){
             checkingForKeys = false;
             hasPressedKey = false;
-            audioSourceContainer.protagSource.PlayOneShot(auditoryZoomClips[0]);
+            audioSourceContainer.protagActionSource.PlayOneShot(auditoryZoomClips[0]);
             yield return new WaitForSeconds(auditoryZoomClips[0].length);
             StartCoroutine(SequenceThree());
             yield break;
@@ -235,7 +251,7 @@ public class AuditoryZoomSequence : SequenceBase
         if (hasPressedKey){
             checkingForKeys = false;
             hasPressedKey = false;
-            audioSourceContainer.protagSource.PlayOneShot(auditoryZoomClips[1]);
+            audioSourceContainer.protagActionSource.PlayOneShot(auditoryZoomClips[1]);
             yield return new WaitForSeconds(auditoryZoomClips[1].length);
             StartCoroutine(SequenceFour());
             yield break;
@@ -262,26 +278,38 @@ public class AuditoryZoomSequence : SequenceBase
             StartCoroutine(CheckIfPlayerZoomedAndHitDusklight());
             yield break;
         }
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfZoomed());
     }
 
     IEnumerator CheckIfPlayerZoomedAndHitDusklight(){
+        pBFootstepSystem.canRotate = false;
+        audioSourceContainer.protagSource.transform.rotation = Quaternion.identity;
         if(controls.inZoom && dusklightFocus.hit){
+            Debug.Log("hit dusklight");
+            controls.lockZoom = true;
+            zoomSound.disabledZoomSound = true;
             StartCoroutine(SequenceFive());
             yield break;
         }
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfPlayerZoomedAndHitDusklight());
     }
 
     IEnumerator SequenceFive(){
+        audioSourceContainer.protagActionSource.PlayOneShot(dusklightStereoClip, 0.5f);
+        yield return new WaitForSeconds(dusklightStereoClip.length - 5f);
+        fadeDusklightAfterHit = true;
         // Finn
         // That sound… that’s why. 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[12]);
         yield return new WaitForSeconds(finnClips[12].length);
-
+        yield return new WaitForSeconds(6f);
         // Finn switches to the next line quickly. And speaks dismissively when mentioning Lambton. 
+        fadeDusklightAfterHit = false;
+        controls.lockZoom = false;
+        zoomSound.disabledZoomSound = false;
+        pBFootstepSystem.canRotate = true;
         // Finn
         // Aaannd on your right, you’ll hear a train approaching the city gates. 
         moveTrain = true;
@@ -293,20 +321,28 @@ public class AuditoryZoomSequence : SequenceBase
 
     IEnumerator CheckIfHitTrain(){
         if(controls.inZoom && trainFocus.hit){
+            Debug.Log("hit train");
+            controls.lockZoom = true;
+            zoomSound.disabledZoomSound = true;
+            pBFootstepSystem.canRotate = false;
             StartCoroutine(SequenceSix());
         } else {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.01f);
             StartCoroutine(CheckIfHitTrain());
         }
     }
 
     IEnumerator SequenceSix(){
+        audioSourceContainer.protagActionSource.PlayOneShot(trainStereoClip, 0.5f);
+        yield return new WaitForSeconds(trainStereoClip.length - 3f);
+        pBFootstepSystem.canRotate = true;
+        controls.lockZoom = false;
+        zoomSound.disabledZoomSound = false;
         // Finn talks again when the player identifies the train. 
         // Finn
         // Eugh, Lambton Energy. Paper pushers in their palaces, money grabbers in their mansions, the corporate kings of Dusklight. They might have the money, but believe me, it’s The Church that hold the power. 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[14]);
         yield return new WaitForSeconds(finnClips[14].length);
-
         // Finn
         // Okay, the last stop on our tour of the desert is the pumping station. Listen for the thing that sounds remarkably like a pumping station. 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[15]);
@@ -316,18 +352,37 @@ public class AuditoryZoomSequence : SequenceBase
 
     IEnumerator CheckIfHitPumpingStation(){
         if (controls.inZoom && pumpingStationFocus.hit){
+            Debug.Log("hit pumping station");
+            controls.lockZoom = true;
+            zoomSound.disabledZoomSound = true;
+            pBFootstepSystem.canRotate = false;
             StartCoroutine(SequenceSeven());
             yield break;
         }
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfHitPumpingStation());
     }
 
-    IEnumerator SequenceSeven(){    
+    IEnumerator SequenceSeven(){
+        audioSourceContainer.protagActionSource.PlayOneShot(pumpingStationStereoClip, 0.5f);
+        yield return new WaitForSeconds(pumpingStationStereoClip.length - 3f);
+        controls.lockZoom = false;
+        zoomSound.disabledZoomSound = false;
+        pBFootstepSystem.canRotate = true;
         // Finn
-        // That’s our target. The stations mine minerals for Lambton Energy. And apparently, the exact things we should be looking for are sitting nice and cosy like right in the overseers office. That’s the mission, get the docs and get the night out of there. Let’s do it. Just press the spacebar to deactivate the device.
+        // That’s our target. The stations mine minerals for Lambton Energy. And apparently, the exact things we should be looking for are sitting nice and cosy like right in the overseers office. That’s the mission, get the docs and get the night out of there. Let’s do it. 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[16]);
         yield return new WaitForSeconds(finnClips[16].length);
+        // Just release the spacebar to deactivate the device.
+        if (controls.inZoom){
+            if (controls.mobile){
+                audioSourceContainer.finnSource.PlayOneShot(finnReleaseMobClip);
+                yield return new WaitForSeconds(finnReleaseMobClip.length);
+            } else {
+                audioSourceContainer.finnSource.PlayOneShot(finnReleaseSpaceBarClip);
+                yield return new WaitForSeconds(finnReleaseSpaceBarClip.length);
+            }
+        }
         StartCoroutine(CheckIfNotInZoom());
     }
 
@@ -336,7 +391,9 @@ public class AuditoryZoomSequence : SequenceBase
             StartCoroutine(SequenceEight());
             yield break;
         } 
-        yield return new WaitForSeconds(0.5f);
+        controls.lockZoom = false;
+        zoomSound.disabledZoomSound = false;
+        yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfNotInZoom());
     }
 
@@ -355,7 +412,7 @@ public class AuditoryZoomSequence : SequenceBase
         // The sound of Finn passing the object/the sound of a generic ‘item added to inventory’ signifies that the player has equipped this technology. Player begins walking towards the door.
         // Finn
         // We nabbed a card from a Lambton transport convoy a while back, the door’ll open up when you’re next to it. All you need to do now is remember the cause.  
-        audioSourceContainer.protagSource.PlayOneShot(addedToInventoryClip);
+        audioSourceContainer.protagActionSource.PlayOneShot(addedToInventoryClip);
         yield return new WaitForSeconds(addedToInventoryClip.length);
         audioSourceContainer.finnSource.PlayOneShot(finnClips[18]);
         yield return new WaitForSeconds(finnClips[18].length);
@@ -374,7 +431,7 @@ public class AuditoryZoomSequence : SequenceBase
     }
 
     void Finished(){
-        audioSourceContainer.protagSource.PlayOneShot(cutsceneExitClip);
+        audioSourceContainer.protagActionSource.PlayOneShot(cutsceneExitClip);
         finished = 1;
         quadbikeFinishedSequence.active = 1;
         StartCoroutine(quadbikeFinishedSequence.Sequence());

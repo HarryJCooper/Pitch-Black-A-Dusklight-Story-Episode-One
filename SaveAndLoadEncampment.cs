@@ -15,8 +15,9 @@ public class SaveAndLoadEncampment : MonoBehaviour
     [SerializeField] DarkVsLight darkVsLight;
     [SerializeField] RemoveReverbTrigger removeReverbTrigger;
     [SerializeField] ChangeFootsteps changeFootsteps;
-    [SerializeField] PlaySound leaveBunkerPlaySound;
     [SerializeField] GameObject bunkerObject;
+    [SerializeField] Controls controls;
+    [SerializeField] PlaySound windSweetenerPlaySound;
 
     public void FinishedEncampment(){ PlayerPrefs.SetInt("bunkerAndEncampment", 1);}
 
@@ -43,8 +44,9 @@ public class SaveAndLoadEncampment : MonoBehaviour
     }
     
     void LoadAfterFinnInBunkerSequence(){
+        windSweetenerPlaySound.hasTriggered = true;
+        controls.canZoom = false;
         bunkerObject.SetActive(false);
-        leaveBunkerPlaySound.hasTriggered = true;
         if (secretSequence.finished == 0 && auditoryZoomSequence.finished == 0){
             secretSequence.active = 1;
             StartCoroutine(secretSequence.Sequence());
@@ -55,6 +57,7 @@ public class SaveAndLoadEncampment : MonoBehaviour
             return;
         }
         if (auditoryZoomSequence.finished == 1){
+            controls.canZoom = true;
             quadbikeFinishedSequence.active = 1;
             StartCoroutine(quadbikeFinishedSequence.Sequence());
         }
@@ -64,6 +67,12 @@ public class SaveAndLoadEncampment : MonoBehaviour
         if (finnInBunkerSequence.finished == 1){
             removeReverbTrigger.TriggerRemotely();
             changeFootsteps.ChangePlayerFootsteps();
+        }
+        if (aroundTableSequence.finished == 1){
+            aroundTableSequence.audioSourceContainer.nightlanderOneSource.gameObject.SetActive(false);
+            aroundTableSequence.audioSourceContainer.nightlanderTwoSource.gameObject.SetActive(false);
+            aroundTableSequence.audioSourceContainer.nightlanderThreeSource.gameObject.SetActive(false);
+            aroundTableSequence.audioSourceContainer.nightlanderFourSource.gameObject.SetActive(false);
         }
         if (auditoryZoomSequence.finished == 1){
             quadbikeFinishedSequence.active = 1;
@@ -82,7 +91,11 @@ public class SaveAndLoadEncampment : MonoBehaviour
         auditoryZoomSequence.finished = PlayerPrefs.GetInt("auditoryZoomSequence");
         mechanicSequence.finished = PlayerPrefs.GetInt("mechanicSequence");
         secretSequence.finished = PlayerPrefs.GetInt("secretSequence");
-        if (finnInBunkerSequence.finished == 1) LoadAfterFinnInBunkerSequence();
+        if (finnInBunkerSequence.finished == 1){
+            LoadAfterFinnInBunkerSequence();
+        } else {
+            StartCoroutine(finnInBunkerSequence.Sequence());
+        }
     }
 
     void LoadEncampment(){

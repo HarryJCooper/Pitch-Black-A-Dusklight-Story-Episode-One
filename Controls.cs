@@ -20,7 +20,7 @@ public class Controls : MonoBehaviour
     
     // COMBAT
     public bool parry, attack, quickRotateRight, quickRotateLeft;
-    public bool paused, enter, cutscenePlaying, allowPause;
+    public bool paused, enter, cutscenePlaying, allowPause, lockZoom;
     public Vector3 touchPosition;
     public Touch touch;
     [SerializeField] Joystick joystick;
@@ -29,6 +29,10 @@ public class Controls : MonoBehaviour
 
     // IN MENU
     public bool inMenu, moveUp, moveDown;
+
+    // CROUCH CLIP
+    [SerializeField] AudioClip crouchClip;
+    [SerializeField] AudioSource playerActionSource;
 
     void Awake(){ 
         canZoom = true;
@@ -53,7 +57,13 @@ public class Controls : MonoBehaviour
         swipeUp = swipeDown = swipeLeft = swipeRight = tap = quickRotateLeft = quickRotateRight = doubleTapLeft = doubleTapRight 
         = attack = parry = moveUp = moveDown = moveForward = moveBackward = turnRight = turnLeft = false;
     }
-    void CheckIfInExplore(){if (!inZoom && !inCombat && !inStealth && !inCutscene && !enteredZoom && !inPause) inExplore = true; else inExplore = false; }
+    void CheckIfInExplore(){
+        if (!inZoom && !inCombat && !inStealth && !inCutscene && !enteredZoom && !inPause){
+            inExplore = true; 
+        } else {
+            inExplore = false; 
+        }
+    }
     void CheckForEnter(){
         if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
             enter = true; return;
@@ -115,13 +125,17 @@ public class Controls : MonoBehaviour
         } else {
             enteredZoom = false;
         }
-        if (Input.GetKeyUp(KeyCode.Space)) inZoom = false;
-        if (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Ended) inZoom = false;
+        if (Input.GetKeyUp(KeyCode.Space) && !lockZoom){
+            inZoom = false;
+        } 
+        if (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Ended && !lockZoom){
+            inZoom = false;
+        } 
     }
     void CheckForCombat(){
         if (!inCombat) return;
         inStealth = canZoom = inZoom = enteredZoom = crouching = false;
-        if (swipeUp || Input.GetKeyDown(KeyCode.Return)){ parry = true; Debug.Log("Parry"); } 
+        if (swipeUp || Input.GetKeyDown(KeyCode.Return)) parry = true; 
         if (doubleTap || Input.GetKeyDown(KeyCode.Space)) attack = true;
         // if (swipeRight || doubleTapLeft) quickRotateLeft = true;
         // if (swipeLeft || doubleTapRight) quickRotateRight = true;
@@ -129,7 +143,10 @@ public class Controls : MonoBehaviour
     void CheckForStealth(){
         if (!inStealth) return;
         inCombat = false;
-        if (Input.GetKeyDown(KeyCode.LeftControl) || swipeDown) crouching = !crouching;
+        if (Input.GetKeyDown(KeyCode.LeftControl) || swipeDown){
+            crouching = !crouching;
+            if (crouching) playerActionSource.PlayOneShot(crouchClip, 0.1f);
+        }
     }
     void CheckForPause(){
         if (Input.touchCount == 2) pauseTimer += Time.deltaTime; else pauseTimer = 0;

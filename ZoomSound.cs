@@ -5,13 +5,14 @@ using UnityEngine.Audio;
 
 public class ZoomSound : MonoBehaviour
 {
-    [SerializeField] AudioSource playerSource;
+    [SerializeField] AudioSource playerSource, playerActionSource;
     [SerializeField] AudioClip zoomInClip, zoomOutClip;
     [SerializeField] AudioClip[] crackleClips, darknessClips;
     [SerializeField] Controls controls;
     [SerializeField] AudioMixer audioMixer;
     float adjuster;
     bool hasPlayedExit = true, transitioning = false;
+    public bool disabledZoomSound;
     [SerializeField] DarkVsLight darkVsLight;
 
     void ZoomAdjuster(){
@@ -20,24 +21,27 @@ public class ZoomSound : MonoBehaviour
                 adjuster += 0.02f;              
             } else {
                 transitioning = false;
+                Debug.Log("controls.inZoom " + adjuster);
             }
         } else {
             if (adjuster > 0){
-                adjuster -= 0.02f;              
+                adjuster -= 0.02f;
+                Debug.Log("!controls.inZoom " + "adjuster > 0");
             } else {
                 transitioning = false;
+                Debug.Log("!controls.inZoom " + "adjuster < 0");
             } 
         }
         audioMixer.SetFloat("OtherSources_Vol", Mathf.Lerp(0, -3, adjuster)); 
         audioMixer.SetFloat("OtherSources_CutOff", Mathf.Lerp(22000, 300, adjuster)); 
     }
 
-    void ZoomIn(){ playerSource.PlayOneShot(zoomInClip);}
+    void ZoomIn(){ playerActionSource.PlayOneShot(zoomInClip);}
 
-    void ZoomOut(){ playerSource.PlayOneShot(zoomOutClip);}
+    void ZoomOut(){ playerActionSource.PlayOneShot(zoomOutClip);}
 
     IEnumerator CrackleRepeater(){
-        playerSource.PlayOneShot(crackleClips[Random.Range(0, crackleClips.Length)], 0.3f);
+        playerActionSource.PlayOneShot(crackleClips[Random.Range(0, crackleClips.Length)], 0.1f);
         yield return new WaitForSeconds(Random.Range(0.3f, 0.5f));
         if (controls.inZoom){
             StartCoroutine(CrackleRepeater());
@@ -48,7 +52,7 @@ public class ZoomSound : MonoBehaviour
 
     IEnumerator DarkAmbiRepeater(){
         playerSource.PlayOneShot(darknessClips[Random.Range(0, darknessClips.Length)], (darkVsLight.playerDarkness * 0.05f));
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(2f);
         if (controls.inZoom){
             StartCoroutine(DarkAmbiRepeater());
         } else {
@@ -65,14 +69,16 @@ public class ZoomSound : MonoBehaviour
             StartCoroutine(CrackleRepeater());
             StartCoroutine(DarkAmbiRepeater());
             transitioning = true;
-            ZoomIn();
+            Debug.Log("entered zoom");
+            if(!disabledZoomSound) ZoomIn();
             hasPlayedExit = false;
         }
 
         if (!controls.inZoom && !hasPlayedExit){
+            Debug.Log("exited zoom");
             hasPlayedExit = true;
             transitioning = true;
-            ZoomOut();
+            if(!disabledZoomSound) ZoomOut();
         }
     }
 
