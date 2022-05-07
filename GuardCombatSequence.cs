@@ -10,15 +10,18 @@ public class GuardCombatSequence : MonoBehaviour
     Controls controls;
     AudioSource playerSource;
     public AudioSource enemySource;
-    bool moveTowards, moveBackAndToSide, moveToPointOne, moveToPointTwo, reachedPointOne, reachedPointTwo, enemyInRange, canParry, attacking, startedFight, fightOver;
-    int playerHealth = 3, attackPhase, playerDiedCount, playerAttackInt, playerBeenHitInt, randomInt;
+    bool moveTowards, moveBackAndToSide, moveToPointOne, moveToPointTwo, reachedPointOne, reachedPointTwo, enemyInRange, canParry, attacking, startedFight, fightOver, hasPlayedHeardProtag;
+    // HERE HERE - reset player health to 3
+    int attackPhase, playerDiedCount, playerAttackInt, playerBeenHitInt, randomInt;
     public IEnumerator enemyCoroutine, playerAttackCoroutine;
     [SerializeField] PlayerWonFightSequence playerWonFightSequence;
     [SerializeField] PlayerLostFightSequence playerLostFightSequence;
     [SerializeField] DarkVsLight darkVsLight;
     [SerializeField] AudioController audioController;
     [SerializeField] AudioSource doorSource;
-    [SerializeField] AudioClip accessDeniedClip, enterAccessCodeClip;
+    [SerializeField] AudioClip accessDeniedClip, accessDeniedAgainClip, protagMakeDecisionClip;
+    [SerializeField] Explosion explosion;
+    public int playerHealth;
 
     #region PATROL VARIABLES
     [SerializeField] Transform guardPositionOne, guardPositionTwo;
@@ -27,14 +30,14 @@ public class GuardCombatSequence : MonoBehaviour
 
     #region STEALTH VARIABLES
     public float currentDetectionDistance, detectionDistance, distanceFromPlayer, detectionTimer, maxDetectionTime;
-    bool startedDetectionBeep, hasEnteredStealth;
-    [SerializeField] AudioClip enemyFoundPlayerSneakingClip, playerFoundSneakingClip, playerFoundWalkingClip;
+    bool startedDetectionBeep, hasEnteredStealth, hasPlayedMakeDecision;
+    [SerializeField] AudioClip enemyFoundPlayerSneakingClip, playerFoundSneakingClip, playerFoundWalkingClip, playerFoundClang;
     #endregion
 
     #region COMBAT AUDIOCLIPS
-    [SerializeField] AudioClip playerParryClip, playerMissedParryClip, playerRanAwayClip, playerBeenKilledClip,
+    [SerializeField] AudioClip playerMissedParryClip, playerRanAwayClip, playerBeenKilledClip,
         enemyAttackClip, enemyBeenKilledClip, enemyLostPlayerClip, drawBatonClip;
-    [SerializeField] AudioClip[] playerAttackClips, playerIsHitByAttackClips, playerPunchClips,
+    [SerializeField] AudioClip[] playerParryClips, playerAttackClips, playerIsHitByAttackClips, playerPunchClips,
     enemyBeenParriedClips, enemyFoundPlayerClips, enemyTauntClips, enemyAttackClips, enemyHitByAttackClips, enemyPatrolClips, guardClips, playerClips;
     #endregion
 
@@ -53,10 +56,10 @@ public class GuardCombatSequence : MonoBehaviour
         enemySource = GetComponent<AudioSource>();
         playerSource = GameObject.Find("Player").GetComponent<AudioSource>();
         controls = GameObject.Find("Controls").GetComponent<Controls>();
-        AssignCoroutine("MoveToPointOne");
+        AssignCoroutine("EnemyPatrolOne");
     }
 
-     void CheckIfDetected(){
+    void CheckIfDetected(){
         if (distanceFromPlayer < currentDetectionDistance) {
             StopCoroutine(enemyCoroutine);
             AssignCoroutine("EnterCombat");
@@ -71,10 +74,20 @@ public class GuardCombatSequence : MonoBehaviour
     }
 
     void Update(){
-        if (Vector3.Distance(transform.position, playerSource.transform.position) < 100 && !controls.inCombat) controls.inStealth = true; else controls.inStealth = false;  
+        if (Vector3.Distance(transform.position, playerSource.transform.position) < 100 && !controls.inCombat){
+            if (!playerSource.isPlaying && !hasPlayedMakeDecision) playerSource.PlayOneShot(protagMakeDecisionClip);
+            hasPlayedMakeDecision = true;
+            controls.inStealth = true; 
+        } else {
+            controls.inStealth = false;  
+        } 
         if (controls.crouching && !startedDetectionBeep){
-            startedDetectionBeep = true; 
+            startedDetectionBeep = true;
             StartCoroutine(DistanceFromEnemySignifier());
+        }
+        if ((!controls.inStealth || !controls.crouching) && !controls.inCombat){
+            Debug.Log("!controls.inStealth || !controls.crouching");
+            StartCoroutine(audioController.FadeMusic());
         }
         if (controls.inStealth){
             DetectionDistanceModifier();
@@ -143,14 +156,14 @@ public class GuardCombatSequence : MonoBehaviour
         } else if (playerHealth == 0 && !fightOver){
             StartCoroutine(PlayerKilled());
         } else if (desiredMethod == "MoveToPointOne"){
-            enemyCoroutine = MoveToPointOne();
+            // enemyCoroutine = MoveToPointOne();
             StartCoroutine(enemyCoroutine);
         } else if (desiredMethod == "MoveToPointTwo"){
             enemyCoroutine = MoveToPointTwo();
             StartCoroutine(enemyCoroutine);
         } else if (desiredMethod == "MoveToPointThree"){
-            enemyCoroutine = MoveToPointThree();
-            StartCoroutine(enemyCoroutine);
+            // enemyCoroutine = MoveToPointThree();
+            // StartCoroutine(enemyCoroutine);
         } else if (desiredMethod == "MoveToPointFour"){
             enemyCoroutine = MoveToPointFour();
             StartCoroutine(enemyCoroutine);
@@ -207,31 +220,35 @@ public class GuardCombatSequence : MonoBehaviour
         // As the player draws closer to the Pumping Station, a guard’s footsteps and murmurs can be heard. He is pacing around a door, a light’s flicker, and the door malfunctioning, in combination with his remarks, denote the door location. 
         // Guard
         // Damn door, is everything broken in this station? Oh yeah, IT IS! So why the hell are they making me guard some ‘out of action’ pumping station when aaaall the others get to go on border detail… 
-        doorSource.PlayOneShot(enterAccessCodeClip);
-        yield return new WaitForSeconds(enterAccessCodeClip.length);
+        if (explosion.finished == 1) yield break;
+        doorSource.PlayOneShot(accessDeniedClip);
+        yield return new WaitForSeconds(accessDeniedClip.length);
+        if (explosion.finished == 1) yield break;
         enemySource.PlayOneShot(enemyPatrolClips[0]);
         yield return new WaitForSeconds(enemyPatrolClips[0].length);
-        AssignCoroutine("MoveToPointOne");
+        AssignCoroutine("EnemyPatrolTwo");
         yield break;
     }
 
-    IEnumerator MoveToPointOne(){
-        moveToPointOne = true;
-        if (reachedPointOne){
-            moveToPointOne = false;
-            AssignCoroutine("EnemyPatrolTwo");
-            yield break;
-        }
-        yield return new WaitForSeconds(0.1f);
-        AssignCoroutine("MoveToPointOne");
-    }
+    // IEnumerator MoveToPointOne(){
+    //     moveToPointOne = true;
+    //     if (reachedPointOne){
+    //         moveToPointOne = false;
+    //         AssignCoroutine("EnemyPatrolTwo");
+    //         yield break;
+    //     }
+    //     yield return new WaitForSeconds(0.1f);
+    //     AssignCoroutine("MoveToPointOne");
+    // }
 
     IEnumerator EnemyPatrolTwo(){
         // Next line is said with a fit of horrific anger, contrasting with the humorous tone of the prior line.
         // Guard
-        // DAMN DOOR! 
-        doorSource.PlayOneShot(accessDeniedClip);
-        yield return new WaitForSeconds(accessDeniedClip.length);
+        // Ah! this door is a inconvenience
+        if (explosion.finished == 1) yield break;
+        doorSource.PlayOneShot(accessDeniedAgainClip);
+        yield return new WaitForSeconds(accessDeniedAgainClip.length);
+        if (explosion.finished == 1) yield break;
         enemySource.PlayOneShot(enemyPatrolClips[1]);
         yield return new WaitForSeconds(enemyPatrolClips[1].length);
         AssignCoroutine("MoveToPointTwo");
@@ -252,38 +269,37 @@ public class GuardCombatSequence : MonoBehaviour
     IEnumerator EnemyPatrolThree(){
         // As the player draws closer, Guard begins uttering again. (Maybe… as the player reaches a trigger the guard remarks on hearing something, no matter how quiet the player is being) 
         // Guard 
-        // What was that?! If anyone’s there… and you haven’t figured out I’m the guard already, well… be warned, I’m not one for playing games… 
-        enemySource.PlayOneShot(enemyPatrolClips[2]);
-        yield return new WaitForSeconds(enemyPatrolClips[2].length);
-        AssignCoroutine("MoveToPointThree");
+        // huh! my ears detected something, guard mode initiated
+        if (distanceFromPlayer < 150 && !controls.notMoving){
+            hasPlayedHeardProtag = true;
+            enemySource.PlayOneShot(enemyPatrolClips[2]);
+            yield return new WaitForSeconds(enemyPatrolClips[2].length);
+        }
+        AssignCoroutine("EnemyPatrolFour");
         yield break;
-    }
-
-    IEnumerator MoveToPointThree(){
-        moveToPointOne = true;
-        if (reachedPointOne){
-            moveToPointOne = false;
-            AssignCoroutine("EnemyPatrolFour");
-            yield break;
-        } 
-        yield return new WaitForSeconds(0.1f);
-        AssignCoroutine("MoveToPointThree");
     }
 
     IEnumerator EnemyPatrolFour(){
         // The player has two approaches of dealing with the guard. After a while, the guard will stop his routine and turn to fixing the door, but the player has to wait a while for this. He leans into a comically scornful tone in the last utterance. 
         // Guard
-        // Ahh it was probably nothing. Screw it, I’m gonna try and fix this door. Once and for all… 
-        enemySource.PlayOneShot(enemyPatrolClips[3]);
-        yield return new WaitForSeconds(enemyPatrolClips[3].length);
-        AssignCoroutine("EnemyPatrolOne");
+        // Ahh it was like nothing. Now, time to fix this door fix this door. Once and for all… 
+        yield return new WaitForSeconds(10f);
+        if (hasPlayedHeardProtag){
+            enemySource.PlayOneShot(enemyPatrolClips[3]);
+            yield return new WaitForSeconds(enemyPatrolClips[3].length);
+            hasPlayedHeardProtag = false;
+        }
+        enemySource.PlayOneShot(enemyPatrolClips[4]);
+        yield return new WaitForSeconds(enemyPatrolClips[4].length);
+        
+        AssignCoroutine("MoveToPointFour");
         yield break;
     }
 
     IEnumerator MoveToPointFour(){
-        moveToPointTwo = true;
-        if (reachedPointTwo){
-            moveToPointTwo = false;
+        moveToPointOne = true;
+        if (reachedPointOne){
+            moveToPointOne = false;
             AssignCoroutine("EnemyPatrolOne");
             yield break;
         }
@@ -301,18 +317,29 @@ public class GuardCombatSequence : MonoBehaviour
             controls.crouching = false;
             controls.inCombat = true;  
             enemySource.Stop();
+            if (explosion.finished == 1) yield break;
+            playerSource.PlayOneShot(playerFoundClang);
             enemySource.PlayOneShot(enemyFoundPlayerSneakingClip);
             yield return new WaitForSeconds(enemyFoundPlayerSneakingClip.length);
+            if (explosion.finished == 1) yield break;
+            enemySource.PlayOneShot(drawBatonClip);
+            yield return new WaitForSeconds(drawBatonClip.length);
+            if (explosion.finished == 1) yield break;
             playerSource.PlayOneShot(playerFoundSneakingClip);
         } else {
             controls.inCombat = true;  
             enemySource.Stop();
+            if (explosion.finished == 1) yield break;
+            playerSource.PlayOneShot(playerFoundClang);
             enemySource.PlayOneShot(enemyFoundPlayerClips[0]);
             yield return new WaitForSeconds(enemyFoundPlayerClips[0].length);
+            if (explosion.finished == 1) yield break;
             enemySource.PlayOneShot(drawBatonClip);
             yield return new WaitForSeconds(drawBatonClip.length);
+            if (explosion.finished == 1) yield break;
             enemySource.PlayOneShot(enemyFoundPlayerClips[1]);
             yield return new WaitForSeconds(enemyFoundPlayerClips[1].length);
+            if (explosion.finished == 1) yield break;
             playerSource.PlayOneShot(playerFoundWalkingClip);
         }
         audioController.PlayMusic("combat", 0.15f);
@@ -397,7 +424,7 @@ public class GuardCombatSequence : MonoBehaviour
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
         canParry = false;
         enemySource.Stop();
-        playerSource.PlayOneShot(playerParryClip);
+        playerSource.PlayOneShot(playerParryClips[Random.Range(0, playerParryClips.Length)]);
         enemySource.PlayOneShot(enemyBeenParriedClips[Random.Range(0, enemyBeenParriedClips.Length)]);
         AssignCoroutine("EnemyDazed");
         yield break;
@@ -436,7 +463,6 @@ public class GuardCombatSequence : MonoBehaviour
             // Aghhh! 
             enemySource.PlayOneShot(guardClips[1]);
             yield return new WaitForSeconds(guardClips[1].length);
-            Debug.Log("player died < 2");
             playerHealth = 3 + darkVsLight.playerDarkness;
             attackPhase = 0;
             AssignCoroutine("MoveTowards");
@@ -454,7 +480,6 @@ public class GuardCombatSequence : MonoBehaviour
             // Can’t go back… too many questions… not enough answers… 
             playerSource.PlayOneShot(playerClips[1]);
             yield return new WaitForSeconds(playerClips[1].length);
-            Debug.Log("player died < 2");
             playerHealth = 3 + darkVsLight.playerDarkness;
             attackPhase = 0;
             AssignCoroutine("MoveTowards");
@@ -464,7 +489,6 @@ public class GuardCombatSequence : MonoBehaviour
         } 
         if (playerDiedCount == 2){
             fightOver = true;
-            Debug.Log("player died count == 2");
             controls.inCombat = false;
             StartCoroutine(audioController.FadeMusic());
             // Protag
@@ -474,7 +498,7 @@ public class GuardCombatSequence : MonoBehaviour
             // Guard
             // I expected more… 
             enemySource.PlayOneShot(guardClips[3]);
-            yield return new WaitForSeconds(guardClips[3].length);
+            yield return new WaitForSeconds(guardClips[3].length -2f);
             playerLostFightSequence.enabled = true;
             StartCoroutine(playerLostFightSequence.Sequence());
             yield break;
@@ -483,11 +507,11 @@ public class GuardCombatSequence : MonoBehaviour
     #endregion
 
     #region PLAYER COMBAT FLOW
-    IEnumerator PlayerAttack(){ 
+    IEnumerator PlayerAttack(){
         attacking = true;
         playerAttackInt = RandomNumberGen("attack");
-        playerSource.PlayOneShot(playerAttackClips[playerAttackInt]);
-        yield return new WaitForSeconds(2f);
+        if (!playerSource.isPlaying) playerSource.PlayOneShot(playerAttackClips[playerAttackInt]);
+        yield return new WaitForSeconds(playerAttackClips[playerAttackInt].length);
         if (enemyInRange) StartCoroutine(PlayerHitEnemy());
         attacking = false;
     }
@@ -519,13 +543,17 @@ public class GuardCombatSequence : MonoBehaviour
         StopCoroutine(enemyCoroutine);
         moveTowards = false;
         StartCoroutine(audioController.FadeMusic());
-        playerSource.PlayOneShot(playerRanAwayClip);
-        yield return new WaitForSeconds(playerRanAwayClip.length);
+        // HERE HERE HERE HERE HERE HERE HERE
+        // playerSource.PlayOneShot(playerRanAwayClip);
+        // yield return new WaitForSeconds(playerRanAwayClip.length);
         darkVsLight.playerDarkness -= 1;
         attackPhase = 0;
         playerHealth = 3 + darkVsLight.playerDarkness;
         enemySource.PlayOneShot(enemyLostPlayerClip);
         yield return new WaitForSeconds(enemyLostPlayerClip.length);
+        yield return new WaitForSeconds(3f);
+        audioController.musicSource.Stop();
+        audioController.SetMusicToZero();
         AssignCoroutine("MoveToPointOne");
         yield break;
     }
@@ -534,7 +562,11 @@ public class GuardCombatSequence : MonoBehaviour
     IEnumerator DistanceFromEnemySignifier(){
         yield return new WaitForSeconds(distanceFromPlayer / 30); 
         enemySource.PlayOneShot(beepingClip);
-        if (!audioController.musicSource.isPlaying) audioController.PlayMusic("stealth", 0.05f);
+        if (!audioController.musicSource.isPlaying){
+            audioController.musicSource.volume = 1;
+            audioController.SetMusicToZero();
+            audioController.PlayMusic("stealth", 0.05f);
+        } 
         if (controls.crouching && controls.inStealth){
             StartCoroutine(DistanceFromEnemySignifier()); 
             yield break;

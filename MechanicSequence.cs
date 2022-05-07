@@ -14,10 +14,8 @@ public class MechanicSequence : SequenceBase
     
     //   For when the player finds the mechanic, instructed by Finn, but the vehicle isn’t ready quite yet. The mechanic informs the player of this. He is fixing things in his shed. Donnie sounds like an aggressive, OCD riddled man; stressed at every turn and somewhat pathetic because of it. 
     public override IEnumerator Sequence(){
-        Debug.Log("started sequence 0");
         yield return new WaitForSeconds(0.6f);
         if (finished == 0 && startedSequence){
-            Debug.Log("started sequence 1");
             controls.inCutscene = true;
             audioSourceContainer.protagActionSource.PlayOneShot(cutsceneEnterClip);
             yield return new WaitForSeconds(cutsceneEnterClip.length);
@@ -64,7 +62,7 @@ public class MechanicSequence : SequenceBase
 
             controls.inCutscene = false;
             audioSourceContainer.protagSource.PlayOneShot(cutsceneExitClip);
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(4f);
             // Protag utters to himself. 
             // Protag 
             // No wonder the Nightlanders aren’t getting anywhere, good job I won't be needing them for long.   

@@ -22,7 +22,6 @@ public class TriggerSound : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("hasEnteredTrigger");
         audioSource.PlayOneShot(sound);    
     }
 

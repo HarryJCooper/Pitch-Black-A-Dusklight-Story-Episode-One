@@ -17,8 +17,10 @@ public class SequenceBase : MonoBehaviour
 
     void Start(){
         if (active == 1 && finished == 0){
-            StartCoroutine(Sequence());
-            StartCoroutine(Loop());
+            if (this.gameObject.activeSelf){
+                StartCoroutine(Sequence());
+                StartCoroutine(Loop());
+            }
         }
     }
 }

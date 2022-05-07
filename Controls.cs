@@ -35,17 +35,16 @@ public class Controls : MonoBehaviour
     [SerializeField] AudioSource playerActionSource;
 
     void Awake(){ 
-        canZoom = true;
         canPause = true;
     }
 
     void Start(){
-        if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
-            || Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor){
-            computer = true;
-            mobile = false;
-            return;
-        }
+        // if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
+        //     || Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor){
+        //     computer = true;
+        //     mobile = false;
+        //     return;
+        // }
         computer = false;
         mobile = true;
     }
@@ -92,7 +91,6 @@ public class Controls : MonoBehaviour
     void TurnLeft(){ if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow)) turnLeft = true; else turnLeft = false; }
     void MoveForward(){
         if ((joystick.Vertical > minDirection) || Input.GetKey(KeyCode.UpArrow)){
-            Debug.Log("MoveForward Controls");
             moveForward = true;
             firstStepCounter += Time.deltaTime;
         } else {
@@ -101,7 +99,6 @@ public class Controls : MonoBehaviour
     }
     void MoveBackward(){
         if ((joystick.Vertical < -minDirection) || Input.GetKey(KeyCode.DownArrow)){
-            Debug.Log("MoveBackward Controls");
             moveBackward = true;
             firstStepCounter += Time.deltaTime;
         } else {
@@ -125,10 +122,11 @@ public class Controls : MonoBehaviour
         } else {
             enteredZoom = false;
         }
-        if (Input.GetKeyUp(KeyCode.Space) && !lockZoom){
+        if (!Input.GetKey(KeyCode.Space) && !lockZoom && computer){
             inZoom = false;
-        } 
-        if (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Ended && !lockZoom){
+        }
+        
+        if (Input.touchCount == 0 && !lockZoom && mobile){
             inZoom = false;
         } 
     }
@@ -145,7 +143,7 @@ public class Controls : MonoBehaviour
         inCombat = false;
         if (Input.GetKeyDown(KeyCode.LeftControl) || swipeDown){
             crouching = !crouching;
-            if (crouching) playerActionSource.PlayOneShot(crouchClip, 0.1f);
+            if (crouching) playerActionSource.PlayOneShot(crouchClip, 0.15f);
         }
     }
     void CheckForPause(){

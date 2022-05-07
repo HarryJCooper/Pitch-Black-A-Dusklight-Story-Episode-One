@@ -10,7 +10,6 @@ public class Dia1ogueSequence : MonoBehaviour
     public int finished;
 
     IEnumerator Sequence(){
-        Debug.Log(finished);
         yield return new WaitForSeconds(15f);
         if (finished == 1 || protagSource.isPlaying || !controls.inExplore) yield break;
         // Protag

@@ -26,21 +26,17 @@ public class ChangeAfterFocus : MonoBehaviour
     void Update(){
         if (controls.inZoom){
             Zoom();
-            Debug.Log("zoomed");
             return;
         }
-        Debug.Log("not in zoom anymore");
         volumeIncreaser = 0;
         audioMixer.SetFloat(poiString, 0); 
         hit = false;
     }
 
     void Zoom(){
-        // IDEA- MAKE ZOOMEDVOLUME INCREASE DEPENDANT ON PLAYER DARKNESS
         if (hit){
-            Debug.Log("hit " + this.gameObject.name);
             if (!hitPOIPlayed){
-                playerActionSource.PlayOneShot(hitPOI);
+                playerActionSource.PlayOneShot(hitPOI, 1.2f);
                 hitPOIPlayed = true;
                 unhitPOIPlayed = false;
             }
@@ -52,7 +48,7 @@ public class ChangeAfterFocus : MonoBehaviour
         audioMixer.SetFloat(poiString, 0); 
         if (!unhitPOIPlayed && controls.inZoom){
             hitPOIPlayed = false;
-            playerActionSource.PlayOneShot(unhitPOI);
+            playerActionSource.PlayOneShot(unhitPOI, 1.2f);
             unhitPOIPlayed = true;
         }
     }

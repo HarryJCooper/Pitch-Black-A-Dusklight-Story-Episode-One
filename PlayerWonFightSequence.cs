@@ -4,9 +4,8 @@ using UnityEngine;
 
 public class PlayerWonFightSequence : SequenceBase
 {
-    [SerializeField] AudioSource protagSource, doorSource;
+    [SerializeField] AudioSource protagSource;
     [SerializeField] AudioClip[] protagClips;
-    [SerializeField] AudioClip doorShutClip;
     [SerializeField] GuardCombatSequence guardCombatSequence;
     [SerializeField] TurnOffOnEnter tannoyOne, tannoyTwo, tannoyThree;
     [SerializeField] DarkVsLight darkVsLight;

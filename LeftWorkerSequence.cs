@@ -14,11 +14,12 @@ public class LeftWorkerSequence : MonoBehaviour
     [SerializeField] AudioController audioController;
     [SerializeField] SaveAndLoadPumpingStation saveAndLoadPumpingStation;
     [SerializeField] AmbienceRepeater quadbikeAmbienceRepeater;
+    [SerializeField] GameObject officeDoorObject;
     public int finished;
 
     void PlayOneShotWithVerb(AudioClip clip){
         protagSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip);
+        protagReverbSource.PlayOneShot(clip, 0.4f);
     }
 
     public IEnumerator Sequence(){
@@ -29,13 +30,17 @@ public class LeftWorkerSequence : MonoBehaviour
         // No-time, didn’t come here to save the world.
         PlayOneShotWithVerb(protagClips[0]);
         yield return new WaitForSeconds(protagClips[0].length);
-        PlayTannoy();
+        doorSource.PlayOneShot(doorSlideClip);
+        yield return new WaitForSeconds(doorSlideClip / 2);
+        doorObject.SetActive(false);
+        tannoySource.clip = tannoyClips[0];
+        tannoySource.loop = true;
+        tannoySource.Play();
     }
 
-    void PlayTannoy(){
-        // Tannoy starts playing
-        StartCoroutine(PlayerInOffice());
-    }
+    
+
+
     
         
 

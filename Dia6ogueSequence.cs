@@ -7,6 +7,7 @@ public class Dia6ogueSequence : MonoBehaviour
     [SerializeField] AudioSource protagSource;
     [SerializeField] AudioClip protagClip;
     [SerializeField] Controls controls;
+    [SerializeField] PBFootstepSystem pBFootstepSystem;
     public int finished;
 
     void OnTriggerEnter(Collider other){ if (other.gameObject.name == "Player") StartCoroutine(Sequence());}

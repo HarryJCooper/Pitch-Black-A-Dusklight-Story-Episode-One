@@ -94,7 +94,7 @@ public class FinnInBunkerSequence : SequenceBase
                 StartCoroutine(SequenceLoop());
                 yield break;
             }
-            initialSource.PlayOneShot(openingStatement);
+            initialSource.PlayOneShot(openingStatement, 0.6f);
             yield return new WaitForSeconds(openingStatement.length - 15f);
             Setup();
             StartCoroutine(audioController.IncreaseMasterCutOff(15f));
@@ -340,7 +340,7 @@ public class FinnInBunkerSequence : SequenceBase
         moveFinnForward = true;
         yield return new WaitForSeconds(2f);
         controls.inCutscene = false;
-        yield return new WaitForSeconds(4f);
+        yield return new WaitForSeconds(6f);
         moveFinnForward = false;
         StartCoroutine(SequenceLoopTwo());
     }
@@ -348,7 +348,6 @@ public class FinnInBunkerSequence : SequenceBase
     IEnumerator SequenceLoopTwo(){
         if (Vector3.Distance(finnTransform.position, playerTransform.position) >= maxDistanceFromPlayer){
             checkDistanceAgain = true;
-            Debug.Log("Checking distance again");
             // Finn 
             // Come on ya dafty, this way! etc.
             finnLoopClipsInt = RandomNumberGen();
@@ -365,7 +364,6 @@ public class FinnInBunkerSequence : SequenceBase
         StopCoroutine(electricalRepeater.ambienceCoroutine);
         StopCoroutine(openDoorAmbienceRepeater.ambienceCoroutine);
         audioSourceContainer.finnSource.Stop();
-        Debug.Log("Sequence two");
         // Finn
         // There you go
         audioSourceContainer.finnSource.PlayOneShot(thereYouGoClip);
@@ -431,7 +429,6 @@ public class FinnInBunkerSequence : SequenceBase
         if (checkDistanceAgain){
             distanceFromPlayer = Vector3.Distance(finnTransform.position, playerTransform.position);
             if (distanceFromPlayer < maxDistanceFromPlayer){
-                Debug.Log("has reached < maxDistanceFromPlayer");
                 checkDistanceAgain = false;
                 controls.inCutscene = true;
                 StartCoroutine(SequenceTwo());;

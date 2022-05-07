@@ -25,8 +25,8 @@ public class LaraCombatSequence : MonoBehaviour
     [SerializeField] AuditoryZoomSequence auditoryZoomSequence;
 
     #region COMBAT AUDIOCLIPS
-    [SerializeField] AudioClip playerParryClip, enemyBeenKilledClip, combatMusicClip, enterTheRingClip;
-    [SerializeField] AudioClip[] enemyBeenParriedClips, enemyIsHitByAttackClips, enemyAttackClips, playerIsHitByAttackClips, playerAttackClips;
+    [SerializeField] AudioClip enemyBeenKilledClip, combatMusicClip, enterTheRingClip;
+    [SerializeField] AudioClip[] playerParryClips, enemyBeenParriedClips, enemyIsHitByAttackClips, enemyAttackClips, playerIsHitByAttackClips, playerAttackClips;
     #endregion
 
     void Start(){
@@ -56,10 +56,6 @@ public class LaraCombatSequence : MonoBehaviour
         } 
         if (moveBackAndToSide) transform.position = Vector3.MoveTowards(transform.position, playerSource.transform.position, -enemyMoveSpeed/2) + new Vector3(enemyMoveSpeed/2, 0, 0); 
         if (Vector3.Distance(transform.position, playerSource.transform.position) < maxDistanceFromPlayer - 0.5f) enemyInRange = true; else enemyInRange = false;  
-        if (reduceMusic && musicVol > -80f){
-            musicVol -= 1;
-            enemySource.outputAudioMixerGroup.audioMixer.SetFloat("Music_Vol", musicVol);
-        } 
     }
 
     void AssignVariables(){
@@ -109,8 +105,8 @@ public class LaraCombatSequence : MonoBehaviour
     #region ENEMY COMBAT FLOW 
     IEnumerator EnterCombat(){
         if (enteredCombat){
-            controls.inCombat = true;  
-            audioController.PlayMusic("Combat", 0.2f);
+            controls.inCombat = true;
+            audioController.PlayMusic("Combat", 0.3f);
             AssignCoroutine("MoveTowards");
             yield break;
         }
@@ -180,7 +176,7 @@ public class LaraCombatSequence : MonoBehaviour
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
         canParry = false;
         enemySource.Stop();
-        playerSource.PlayOneShot(playerParryClip);
+        playerSource.PlayOneShot(playerParryClips[Random.Range(0, playerParryClips.Length)]);
         enemySource.PlayOneShot(enemyBeenParriedClips[Random.Range(0, enemyBeenParriedClips.Length)]);
         AssignCoroutine("EnemyDazed");
         yield break;
@@ -194,13 +190,10 @@ public class LaraCombatSequence : MonoBehaviour
     // ________________ // 
 
     IEnumerator EnemyKilled(){
-        reduceMusic = true;
         yield return new WaitForSeconds(enemyIsHitByAttackClips[0].length + 0.5f);  
         enemySource.PlayOneShot(enemyBeenKilledClip);
         yield return new WaitForSeconds(enemyBeenKilledClip.length);
-        reduceMusic = false;
-        musicSource.Stop();
-        audioMixer.SetFloat("Music_Vol", 0f);
+        StartCoroutine(audioController.FadeMusic());
         darkVsLight.playerDarkness += 1;
         controls.inCombat = false;
         controls.canZoom = true;
@@ -209,6 +202,7 @@ public class LaraCombatSequence : MonoBehaviour
         playerActionSource.PlayOneShot(cutsceneExitClip);
         auditoryZoomSequence.CheckIfShouldStart();
         ringObject.SetActive(false);
+        this.gameObject.SetActive(false);
     }
     #endregion
 
@@ -223,7 +217,7 @@ public class LaraCombatSequence : MonoBehaviour
 
     IEnumerator PlayerHitEnemy(){
         attackPhase += 1;
-        playerActionSource.PlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
+        playerSource.PlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
         enemySource.Stop();
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
         enemySource.PlayOneShot(enemyIsHitByAttackClips[Random.Range(0, enemyIsHitByAttackClips.Length)]);

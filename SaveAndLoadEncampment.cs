@@ -82,7 +82,9 @@ public class SaveAndLoadEncampment : MonoBehaviour
 
     void LoadDarkVsLight(){darkVsLight.playerDarkness = PlayerPrefs.GetInt("darkVsLight");}
 
-    void LoadPlayerPosition(){ playerTransform.position = new Vector3(PlayerPrefs.GetFloat("playerX"), 0.3f, PlayerPrefs.GetFloat("playerZ")); }
+    void LoadPlayerPosition(){ 
+        if (finnInBunkerSequence.finished == 1) playerTransform.position = new Vector3(PlayerPrefs.GetFloat("playerX"), 0.3f, PlayerPrefs.GetFloat("playerZ")); 
+    }
 
     void LoadEncampmentSequences(){
         finnInBunkerSequence.finished = PlayerPrefs.GetInt("finnInBunkerSequence");
@@ -98,9 +100,18 @@ public class SaveAndLoadEncampment : MonoBehaviour
         }
     }
 
+    void LoadStartOfEncampment(){
+        finnInBunkerSequence.finished = 0;
+        encampmentCombatSequence.finished = 0;
+        aroundTableSequence.finished = 0;
+        auditoryZoomSequence.finished = 0;
+        mechanicSequence.finished = 0;
+        secretSequence.finished = 0;
+    }
+
     void LoadEncampment(){
         LoadEncampmentSequences();
-        LoadPlayerPosition();
+        LoadPlayerPosition(); 
         LoadDarkVsLight();
         LoadOther();
     }

@@ -29,7 +29,9 @@ public class FieldOfView : MonoBehaviour
     public float timer;
     public RaycastHit[] hits;
 
-    private void Start(){StartCoroutine(FindTargetsWithDelay(.5f));}
+    [SerializeField] Controls controls;
+
+    private void Start(){StartCoroutine(FindTargetsWithDelay(.1f));}
 
     IEnumerator FindTargetsWithDelay(float delay){
         while (true){
@@ -104,7 +106,7 @@ public class FieldOfView : MonoBehaviour
     }
 
     void SetInViewHitAndDirectBehind(){
-        foreach (Transform target in visibleTargets) if (Input.GetKey(KeyCode.Space)) target.gameObject.GetComponent<ChangeAfterFocus>().hit = true;
+        foreach (Transform target in visibleTargets) if (controls.inZoom) target.gameObject.GetComponent<ChangeAfterFocus>().hit = true;
         foreach (Transform target in frontTargets) target.gameObject.GetComponent<IncreaseSourceVolume>().inView = true;
         foreach (Transform target in invisibleTargets) target.gameObject.GetComponent<ChangeAfterFocus>().hit = false;
         foreach (Transform target in notFrontTargets) target.gameObject.GetComponent<IncreaseSourceVolume>().inView = false;
@@ -114,12 +116,12 @@ public class FieldOfView : MonoBehaviour
 
     void Update(){
         SetInViewHitAndDirectBehind();
-        if (Input.GetKeyDown(KeyCode.Space)){
+        if (controls.enteredZoom){
             timer = 0;
             focused = true;
         }
-        if (Input.GetKey(KeyCode.Space)) timer += Time.deltaTime;
-        if (Input.GetKeyUp(KeyCode.Space)) focused = false;
+        if (controls.inZoom) timer += Time.deltaTime;
+        if (!controls.inZoom) focused = false;
     }
 
     public Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal){

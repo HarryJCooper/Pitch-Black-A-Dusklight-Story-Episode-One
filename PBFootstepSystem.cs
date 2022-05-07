@@ -43,9 +43,12 @@ public class PBFootstepSystem : MonoBehaviour
     }
 
     void CheckForRotate(){
+        float newRotSpeed = rotSpeed;
+        if (controls.inZoom) newRotSpeed = rotSpeed/2;
+        if (controls.mobile) newRotSpeed = newRotSpeed * 0.66f; // if on mobile slows rotation to make it easy to centre things.
         IncreaseRotationTimer();
-        if (controls.turnLeft) {transform.Rotate(Vector3.up, -rotSpeed * Time.deltaTime); return;}
-        if (controls.turnRight) {transform.Rotate(Vector3.up, rotSpeed * Time.deltaTime); return;}
+        if (controls.turnLeft) {transform.Rotate(Vector3.up, -newRotSpeed * Time.deltaTime); return;}
+        if (controls.turnRight) {transform.Rotate(Vector3.up, newRotSpeed * Time.deltaTime); return;}
         if (controls.quickRotateLeft) {transform.Rotate(Vector3.up, -90); return;}
         if (controls.quickRotateRight) {transform.Rotate(Vector3.up, 90); return;}
     }

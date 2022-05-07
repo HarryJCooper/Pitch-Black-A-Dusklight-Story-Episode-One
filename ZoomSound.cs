@@ -21,15 +21,12 @@ public class ZoomSound : MonoBehaviour
                 adjuster += 0.02f;              
             } else {
                 transitioning = false;
-                Debug.Log("controls.inZoom " + adjuster);
             }
         } else {
             if (adjuster > 0){
                 adjuster -= 0.02f;
-                Debug.Log("!controls.inZoom " + "adjuster > 0");
             } else {
                 transitioning = false;
-                Debug.Log("!controls.inZoom " + "adjuster < 0");
             } 
         }
         audioMixer.SetFloat("OtherSources_Vol", Mathf.Lerp(0, -3, adjuster)); 
@@ -69,13 +66,11 @@ public class ZoomSound : MonoBehaviour
             StartCoroutine(CrackleRepeater());
             StartCoroutine(DarkAmbiRepeater());
             transitioning = true;
-            Debug.Log("entered zoom");
             if(!disabledZoomSound) ZoomIn();
             hasPlayedExit = false;
         }
 
         if (!controls.inZoom && !hasPlayedExit){
-            Debug.Log("exited zoom");
             hasPlayedExit = true;
             transitioning = true;
             if(!disabledZoomSound) ZoomOut();

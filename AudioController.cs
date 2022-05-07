@@ -6,8 +6,9 @@ using UnityEngine.Audio;
 public class AudioController : MonoBehaviour
 {
     public bool paused, increaseCutOffAtStart = true;
-    bool reduceLowpass, increaseLowpass, reduceMusicVol, reduceRoomVol, reduceExposedParameter, increaseRoomVol, increaseLowpassForPause, decreaseLowpassForPause;
-    float lowpass = 22000, pauseLowpass = 22000, musicVol, exposedParameterVol, reverbVol, roomVol, roomMaxVol, changeLowpassFloat;
+    bool reduceLowpass, increaseLowpass, reduceMusicVol, reduceRoomVol, reduceExposedParameterVol, increaseExposedParameterVol, 
+    reduceExposedParameterCutOff, increaseExposedParameterCutOff, increaseRoomVol, increaseLowpassForPause, decreaseLowpassForPause;
+    float lowpass = 22000, pauseLowpass = 22000, musicVol, exposedParameterVol, exposedParameterCutOff, reverbVol, roomVol, roomMaxVol, changeLowpassFloat;
     public AudioSource musicSource;
     string exposedParameter;
     [SerializeField] AudioMixer audioMixer;
@@ -15,7 +16,6 @@ public class AudioController : MonoBehaviour
     [SerializeField] DarkVsLight darkVsLight;
 
     void IncreaseLowpassForPause(){
-        Debug.Log("inc pause");
         if (pauseLowpass < 22000){
             pauseLowpass += 100;
             audioMixer.SetFloat("Pause_CutOff", pauseLowpass); 
@@ -64,10 +64,22 @@ public class AudioController : MonoBehaviour
         if (reduceMusicVol && musicVol > -80f){
             musicVol -= 1;
             audioMixer.SetFloat("Music_Vol", musicVol);
-        } 
-        if (reduceExposedParameter && exposedParameterVol > -80f){
+        }
+        if (reduceExposedParameterVol && exposedParameterVol > -80f){
             audioMixer.SetFloat(exposedParameter, exposedParameterVol);
             exposedParameterVol -= 1;
+        }
+        if (increaseExposedParameterVol && exposedParameterVol < 0){
+            audioMixer.SetFloat(exposedParameter, exposedParameterVol);
+            exposedParameterVol += 1;
+        }
+        if (reduceExposedParameterCutOff && exposedParameterCutOff > 0){
+            audioMixer.SetFloat(exposedParameter, exposedParameterCutOff);
+            exposedParameterCutOff -= 100;
+        }
+        if (increaseExposedParameterCutOff && exposedParameterCutOff < 22000){
+            audioMixer.SetFloat(exposedParameter, exposedParameterCutOff);
+            exposedParameterCutOff += 100;
         }
     }
 
@@ -100,7 +112,6 @@ public class AudioController : MonoBehaviour
     }
 
     public IEnumerator IncreaseMasterCutOff(float m_time){
-        Debug.Log("inc master cutoff");
         changeLowpassFloat = 22000 / (m_time * 60);
         reduceLowpass = false;
         increaseLowpass = true;
@@ -122,13 +133,18 @@ public class AudioController : MonoBehaviour
         musicSource.Play();
     }
 
+    public void SetMusicToZero(){
+        reduceMusicVol = false;
+        audioMixer.SetFloat("Music_Vol", 0);
+    }
+
     public IEnumerator FadeMusic(){
         reduceMusicVol = true;
         yield return new WaitForSeconds(3f);
         musicSource.Stop();
         reduceMusicVol = false;
         musicVol = 0;
-        audioMixer.SetFloat("Music_Vol", musicVol);
+        audioMixer.SetFloat("Music_Vol", 0);
     }
 
     public IEnumerator FadeOutReverbAndReflections(){
@@ -145,12 +161,36 @@ public class AudioController : MonoBehaviour
         increaseRoomVol = false;
     }
 
-    public IEnumerator ReduceExposedParameter(string m_exposedParameter, float m_time){
+    public IEnumerator ReduceExposedParameterVol(string m_exposedParameter, float m_time){
         exposedParameter = m_exposedParameter;
         audioMixer.GetFloat(exposedParameter, out exposedParameterVol);
-        reduceExposedParameter = true;
+        reduceExposedParameterVol = true;
         yield return new WaitForSeconds(m_time);
-        reduceExposedParameter = false;
+        reduceExposedParameterVol = false;
+    }
+
+    public IEnumerator IncreaseExposedParameterVol(string m_exposedParameter, float m_time){
+        exposedParameter = m_exposedParameter;
+        audioMixer.GetFloat(exposedParameter, out exposedParameterVol);
+        increaseExposedParameterVol = true;
+        yield return new WaitForSeconds(m_time);
+        increaseExposedParameterVol = false;
+    }
+
+    public IEnumerator ReduceExposedParameterCutOff(string m_exposedParameter, float m_time){
+        exposedParameter = m_exposedParameter;
+        audioMixer.GetFloat(exposedParameter, out exposedParameterCutOff);
+        reduceExposedParameterCutOff = true;
+        yield return new WaitForSeconds(m_time);
+        reduceExposedParameterCutOff = false;
+    }
+
+    public IEnumerator IncreaseExposedParameterCutOff(string m_exposedParameter, float m_time){
+        exposedParameter = m_exposedParameter;
+        audioMixer.GetFloat(exposedParameter, out exposedParameterCutOff);
+        increaseExposedParameterCutOff = true;
+        yield return new WaitForSeconds(m_time);
+        increaseExposedParameterCutOff = false;
     }
 
     public IEnumerator SetDarkVsLightAmbience(){

@@ -30,7 +30,6 @@ public class RayCastClosestWall : MonoBehaviour
             GameObject hitGameObject = interactionRayHit.transform.gameObject;
             string hitFeedback = hitGameObject.name;
             DistanceForward = interactionRayHit.distance;
-            Debug.Log(DistanceForward);
         }
     }
 }

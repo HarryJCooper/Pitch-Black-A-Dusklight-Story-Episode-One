@@ -1,24 +1,31 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class SavedWorkerSequence : SequenceBase
 {
-    [SerializeField] AudioSource protagSource, protagReverbSource, factoryWorkerSource, finnSource, musicSource;
-    [SerializeField] AudioClip[] protagClips, factoryWorkerClips, finnClips;
-    [SerializeField] AudioClip rifleButtClip, rubbleClip, workerCoughingClip, outroThemeClip;
+    [SerializeField] AudioSource protagSource, protagReverbSource, protagActionSource, factoryWorkerSource, doorSource, desertWindSource, finnSource, musicSource;
+    [SerializeField] AudioClip[] protagClips, factoryWorkerClips, finnClips, factoryWorkerLoopClips;
+    [SerializeField] AudioClip rifleButtClip, rubbleClip, workerCoughingClip, desertWindClip, suckInClip, desertWindSweetenerClip, 
+    explosionClip, quadbikeRevvingClip, doorBeepClip, doorOpenClip, outroThemeClip;
     [SerializeField] DarkVsLight darkVsLight;
     [SerializeField] SaveAndLoadPumpingStation saveAndLoadPumpingStation;
     [SerializeField] AudioController audioController;
-    [SerializeField] AmbienceRepeater collapseRepeater;
+    [SerializeField] AmbienceRepeater collapseRepeater, pumpingStationRepeater, desertRepeater;
     [SerializeField] Controls controls;
     [SerializeField] PBFootstepSystem pBFootstepSystem;
+    [SerializeField] GameObject desertDoor, desertAudioSourcesObject;
+    [SerializeField] AudioMixer audioMixer;
+    [SerializeField] ReverbManager reverbManager;
     public bool hasReachedExit;
     public bool hasStarted;
+    bool moveShaunToDoor, moveShaunOutside, playerOutside;
+    int factoryWorkerI;
 
     void PlayOneShotWithVerb(AudioClip clip){
         protagSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip);
+        protagReverbSource.PlayOneShot(clip, 0.4f);
     }
 
     void Start(){ active = 0;}
@@ -40,13 +47,79 @@ public class SavedWorkerSequence : SequenceBase
         pBFootstepSystem.canRotate = true;
         controls.inCutscene = false;
         factoryWorkerSource.PlayOneShot(workerCoughingClip);
+        desertAudioSourcesObject.SetActive(true);
+        desertWindSource.loop = true;
+        desertWindSource.clip = desertWindClip;
+        desertWindSource.Play();
+        desertDoor.SetActive(false);
+        moveShaunToDoor = true;
+        finnSource.gameObject.SetActive(true);
         // The pair dash for an exit - CREATE AN EXIT SOUND
         // The pair exit and stand outside the collapsing station entrance. They are both out of breath and panicked somewhat. 
         // Finally, they make it out of station through a nearby door (cutscene – audio MUST be well directed to justify cut scenes) – rubble falling around them, industrial moans, panicked breathe, Shaun in pain etc. 
     }
 
+    void FixedUpdate(){
+        if (moveShaunToDoor){
+            if (Vector3.Distance(factoryWorkerSource.transform.position, doorSource.transform.position) > 2){
+                factoryWorkerSource.transform.position = Vector3.MoveTowards(factoryWorkerSource.transform.position, doorSource.transform.position, 0.1f);
+            } else {
+                moveShaunToDoor = false;
+                StartCoroutine(OpenDoor());
+            }
+        } else if (moveShaunOutside){
+            if (Vector3.Distance(factoryWorkerSource.transform.position, desertWindSource.transform.position) > 2){
+                factoryWorkerSource.transform.position = Vector3.MoveTowards(factoryWorkerSource.transform.position, desertWindSource.transform.position, 0.1f);
+            } else {
+                moveShaunOutside = false;
+                StartCoroutine(ShaunOutside());
+            }
+        }
+    }
+
+    void RemoveReverbAndPSSources(){
+        reverbManager.turnedOn = false;
+        audioMixer.SetFloat("PumpingStationVerbOne_Vol", -80f);
+        audioMixer.SetFloat("PumpingStationVerbTwo_Vol", -80f);
+        audioMixer.SetFloat("PumpingStationVerbThree_Vol", -80f);
+        pumpingStationRepeater.StopAllSources();
+        desertRepeater.gameObject.SetActive(true);
+        StartCoroutine(desertRepeater.ambienceCoroutine);
+    }
+
+    public IEnumerator OpenDoor(){
+        doorSource.PlayOneShot(doorBeepClip);
+        yield return new WaitForSeconds(doorBeepClip.length);
+        doorSource.PlayOneShot(doorOpenClip);
+        yield return new WaitForSeconds(doorOpenClip.length);
+        moveShaunOutside = true;
+    }
+
+    IEnumerator ShaunOutside(){
+        if (playerOutside) yield break;
+        factoryWorkerSource.PlayOneShot(factoryWorkerLoopClips[factoryWorkerI]);
+        if (factoryWorkerI < (factoryWorkerClips.Length - 1)){
+            factoryWorkerI += 1;
+        } else {
+            factoryWorkerI = 0;
+        }
+        yield return new WaitForSeconds(10f);
+        StartCoroutine(ShaunOutside());
+    }
+
     public IEnumerator SequenceContinued(){
-        // StartCoroutine(audioController.FadeOutReverbAndReflections());
+        playerOutside = true;
+        protagActionSource.PlayOneShot(suckInClip);
+        yield return new WaitForSeconds(suckInClip.length);
+        audioController.SetVolumeToNothing("Master_Vol");
+        RemoveReverbAndPSSources();
+        yield return new WaitForSeconds(0.5f);
+        factoryWorkerSource.Stop();
+        audioController.SetVolumeToZero("Master_Vol");
+        protagActionSource.PlayOneShot(explosionClip);
+        protagSource.transform.position += new Vector3(0, 0, 10f);
+        factoryWorkerSource.transform.position = new Vector3(protagSource.transform.position.x - 7f, 0.3f, protagSource.transform.position.z);
+        protagActionSource.PlayOneShot(desertWindSweetenerClip);
         yield return new WaitForSeconds(5f);
         // The two emerge, falling building sounds behind them. They get up, brush dust and debris off of them, panting.
 

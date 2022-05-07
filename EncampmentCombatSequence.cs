@@ -5,8 +5,8 @@ using UnityEngine.Audio;
 
 public class EncampmentCombatSequence : SequenceBase
 {
-    [SerializeField] AudioClip playerAttackClip, playerParryClip, distantBirdClip, enterTheRingClip;
-    [SerializeField] AudioClip[] loopClips, playerClips, laraClips, mobileClips, playerBeenHitClips, laraBeenHitClips, laraBeenParriedClips, laraAttackClips, 
+    [SerializeField] AudioClip playerAttackClip, distantBirdClip, enterTheRingClip;
+    [SerializeField] AudioClip[] loopClips, playerParryClips, playerClips, laraClips, mobileClips, playerBeenHitClips, laraBeenHitClips, laraBeenParriedClips, laraAttackClips, 
     playerPunchClips, laraPunchClips;
     [SerializeField] AudioSource laraSource, distantBirdSource;
     [SerializeField] float maxDistanceFromPlayer, angleToEnemy, playersMaxAngleToMiss;
@@ -102,7 +102,7 @@ public class EncampmentCombatSequence : SequenceBase
         // Lara
         // Alright, you seem like you can handle yourself, let’s go over what you know and then we can refine some stuff from there.
         ringObject.SetActive(true);
-        audioSourceContainer.protagSource.transform.position = new Vector3(34.3f, 0.3f, 46.5f);
+        audioSourceContainer.protagSource.transform.position = new Vector3(36.3f, 0.3f, 46.5f);
         pBFootstepSystem.canRotate = false;
         audioSourceContainer.protagActionSource.PlayOneShot(enterTheRingClip, 0.2f);
         yield return new WaitForSeconds(enterTheRingClip.length);
@@ -250,7 +250,7 @@ public class EncampmentCombatSequence : SequenceBase
         laraSource.Stop();
         audioSourceContainer.protagSource.Stop();
         laraSource.PlayOneShot(laraClips[9]);
-        yield return new WaitForSeconds(laraClips[9].length);
+        yield return new WaitForSeconds(laraClips[9].length - 0.5f);
         moveLara = false;
         audioMixer.SetFloat("Lara_Vol", -5f);
         finished = 1;
@@ -296,7 +296,7 @@ public class EncampmentCombatSequence : SequenceBase
     void CheckForParry(){
         if (!controls.parry || !canParry || hasParried) return;    
         laraSource.Stop();
-        audioSourceContainer.protagActionSource.PlayOneShot(playerParryClip);
+        audioSourceContainer.protagActionSource.PlayOneShot(playerParryClips[Random.Range(0, playerParryClips.Length)]);
         laraParryInt = RandomNumberGen("Parry");
         laraSource.PlayOneShot(laraBeenParriedClips[laraParryInt]);
         hasParried = true;

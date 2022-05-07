@@ -259,7 +259,6 @@ public class TutorialCombatSequence : SequenceBase
 
     void Update(){
         if (checkForParry && controls.parry && canParry){
-            Debug.Log("has parried in the tutorial combat sequence");
             hasParried = true;
             kidOneSource.Stop();
             kidOneSource.PlayOneShot(kidOneBeenParriedClip);

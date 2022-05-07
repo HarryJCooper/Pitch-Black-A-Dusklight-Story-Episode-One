@@ -147,13 +147,10 @@ public class TutorialStealthSequence : SequenceBase
     IEnumerator LoopClips(){
         yield return new WaitForSeconds(12f);
         if (controls.inCutscene) yield break;
-        Debug.Log("made it past yielding break");
         if (!charlieSource.isPlaying){
-            Debug.Log("said thingy");
             charlieSource.PlayOneShot(charlieLoopClips[Random.Range(0, charlieLoopClips.Length)]);
             StartCoroutine(LoopClips());
         } else {
-            Debug.Log("didn't say thingy");
             StartCoroutine(LoopClips());
         }
 

@@ -39,7 +39,6 @@ public class RayCastToWalls : MonoBehaviour
             GameObject hitGameObject = interactionRayHit.transform.gameObject;
             string hitFeedback = hitGameObject.name;
             DistanceRight = interactionRayHit.distance;
-            Debug.Log(DistanceRight);
         }
     }
 
@@ -59,7 +58,6 @@ public class RayCastToWalls : MonoBehaviour
             GameObject hitGameObject = interactionRayHit.transform.gameObject;
             string hitFeedback = hitGameObject.name;
             DistanceLeft = interactionRayHit.distance;
-            Debug.Log(DistanceLeft);
         }
     }
 

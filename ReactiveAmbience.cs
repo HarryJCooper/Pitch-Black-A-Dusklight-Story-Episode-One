@@ -22,7 +22,6 @@ public class ReactiveAmbience : MonoBehaviour
             chosenRotation = true;
             beenTriggered = true;
             audioSource.PlayOneShot(audioClips[Random.Range(0, audioClips.Length)]);
-            Debug.Log("entered trigger");
         }
     }
 

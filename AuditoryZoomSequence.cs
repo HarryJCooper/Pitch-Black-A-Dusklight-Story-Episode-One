@@ -8,7 +8,7 @@ public class AuditoryZoomSequence : SequenceBase
     [SerializeField] AudioSourceContainer audioSourceContainer;
     [SerializeField] AudioClip[] finnClips, finnClipsMob, finnLoopClips, finnFootstepClips, protagClips, auditoryZoomClips;
     [SerializeField] AudioClip addedToInventoryClip, thereYouGoClip, dusklightStereoClip, trainStereoClip, pumpingStationStereoClip, finnReleaseSpaceBarClip, finnReleaseMobClip;
-    bool hasPassed, moveTrain, moveTowardsOne, moveTowardsTwo, checkingForKeys, hasPressedKey, moveFinnToEdgeOfCliff, moveFinnLeft, moveFinnRight, fadeDusklightAfterHit;
+    bool hasPassed, moveTrain, moveTowardsOne, moveTowardsTwo, checkingForKeys, hasPressedKey, moveFinnToEdgeOfCliff, moveFinnLeft, moveFinnRight, fadeDusklightAfterHit, inRange, hasStartedAZIntro, waitingForAZIntro;
     [SerializeField] GameObject edgeOfCliff, distantDusklightObject, trainObject, pumpingStationObject;
     [SerializeField] Controls controls;
     [SerializeField] ChangeAfterFocus dusklightFocus, trainFocus, pumpingStationFocus;
@@ -21,10 +21,15 @@ public class AuditoryZoomSequence : SequenceBase
     [SerializeField] EnemyFootsteps finnFootsteps;
     [SerializeField] ZoomSound zoomSound;
     [SerializeField] PBFootstepSystem pBFootstepSystem;
+    [SerializeField] AmbienceRepeater dusklightAmbienceRepeater;
+    [SerializeField] SecretSequence secretSequence;
+    [SerializeField] SequenceTrigger secretSequenceTrigger;
     float fadeDusklightVol;
     int loopInt;
 
-    void Awake(){ active = 0;}
+    void Awake(){ 
+        active = 0;
+    }
 
     public void CheckIfShouldStart(){
         if (encampmentCombatSequence.finished == 1
@@ -43,7 +48,7 @@ public class AuditoryZoomSequence : SequenceBase
 
     void MoveTrain(){
         if (Vector3.Distance(trainFocus.transform.position, dusklightFocus.transform.position) > 3){
-            dusklightFocus.transform.position = Vector3.MoveTowards(trainFocus.transform.position, dusklightFocus.transform.position, 0.1f); 
+            trainFocus.transform.position = Vector3.MoveTowards(trainFocus.transform.position, dusklightFocus.transform.position, 0.1f); 
             return;
         }
         moveTrain = false;
@@ -62,6 +67,9 @@ public class AuditoryZoomSequence : SequenceBase
     }
 
     void Setup(){
+        secretSequence.enabled = false;
+        secretSequenceTrigger.gameObject.SetActive(false);
+        audioSourceContainer.milesSource.gameObject.SetActive(false);
         audioSourceContainer.finnSource.transform.position = new Vector3(
             audioSourceContainer.protagSource.transform.position.x + 40, 
             0.3f,
@@ -76,7 +84,7 @@ public class AuditoryZoomSequence : SequenceBase
         pumpingStationObject.SetActive(true);
         distantDusklightObject.SetActive(true);
         audioSourceContainer.trainSource.Play();
-        audioSourceContainer.dusklightSource.Play();
+        dusklightAmbienceRepeater.PlayAllSources();
         audioSourceContainer.pumpingStationSource.Play();
         audioMixer.SetFloat("Finn_Vol", -5f);
         finnFootsteps.footstepClips = finnFootstepClips;
@@ -93,13 +101,18 @@ public class AuditoryZoomSequence : SequenceBase
                 hasPressedKey = true;
             }
         }
+        if (waitingForAZIntro){
+            inRange = !NotInRange();
+        } 
+        if (inRange && !hasStartedAZIntro && waitingForAZIntro){
+            waitingForAZIntro = false;
+            hasStartedAZIntro = true;
+            audioSourceContainer.finnSource.Stop();
+            StartCoroutine(SequenceTwo());
+        }
     }
 
     void FixedUpdate(){
-        if (fadeDusklightAfterHit){
-            fadeDusklightVol -= 0.2f;
-            audioMixer.SetFloat("Dusklight_FadeAfterHitVol", fadeDusklightVol);
-        }
         if (moveTowardsOne) MoveTowards(10);
         if (moveTowardsTwo) MoveTowards(3);
         if (moveFinnToEdgeOfCliff) MoveFinnToEdgeOfCliff();
@@ -130,8 +143,23 @@ public class AuditoryZoomSequence : SequenceBase
             moveTowardsTwo = true;
             audioSourceContainer.finnSource.PlayOneShot(finnClips[1]);
             yield return new WaitForSeconds(finnClips[1].length + 2f);
-            moveTowardsTwo = false;
+            StartCoroutine(MoveFinnToPlayer());
         }
+    }
+
+    IEnumerator MoveFinnToPlayer(){
+        if (NotInRange()){
+            yield return new WaitForSeconds(0.4f);
+            StartCoroutine(MoveFinnToPlayer());
+            yield break;
+        } else {
+            moveTowardsTwo = false;
+            StartCoroutine(SequenceTwo());
+        }
+    }
+
+    IEnumerator SequenceTwo(){
+        controls.inCutscene = true;
         // Finn
         // Guessing you spoke to everyone? Either way, if you’re ready then so am I. Tech buffs in the bunker have left us a new toy. Yes, it’s a prototype, but not the kind that blows up
         audioSourceContainer.finnSource.PlayOneShot(finnClips[2]);
@@ -153,10 +181,11 @@ public class AuditoryZoomSequence : SequenceBase
         // It’s called the auditory zoom. Lets you hear for miles, it automatically highlights points of interest. Follow me, we’ll go to edge of the cliff here, and try it out. 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[4]);
         yield return new WaitForSeconds(finnClips[4].length);
-
+        controls.inCutscene = false;
         moveFinnToEdgeOfCliff = true;
         // Lines for if player fails to follow. 
         yield return new WaitForSeconds(10f);
+        waitingForAZIntro = true;
         StartCoroutine(InRangeLoop());
     }
 
@@ -171,22 +200,24 @@ public class AuditoryZoomSequence : SequenceBase
             StartCoroutine(MoveTimer(8));
             // Finn
             // Come on agent / Over-here / 
+            if (inRange) yield break;
             audioSourceContainer.finnSource.PlayOneShot(finnClips[5]);
             yield return new WaitForSeconds(8f);
             if (NotInRange()){
+                if (inRange) yield break;
                 StartCoroutine(MoveTimer(8));
                 audioSourceContainer.finnSource.PlayOneShot(finnLoopClips[RandomNumberGen()]);
                 yield return new WaitForSeconds(8f);
+                if (inRange) yield break;
                 if (NotInRange()){
                     StartCoroutine(InRangeLoop());    
                 } else {
-                    StartCoroutine(SequenceTwo());
+                    StartCoroutine(SequenceThree());
                 }
             } else {
+                if (inRange) yield break;
                 StartCoroutine(InRangeLoop());
-            }
-        } else {
-            StartCoroutine(SequenceTwo());
+            };
         }
     }
 
@@ -194,15 +225,15 @@ public class AuditoryZoomSequence : SequenceBase
         moveFinnRight = true;
         yield return new WaitForSeconds(time / 4);
         moveFinnRight = false;
-        moveFinnLeft = true;
         yield return new WaitForSeconds(time / 2);
-        moveFinnLeft = false;
-        moveFinnRight = true;
+        moveFinnLeft = true;
         yield return new WaitForSeconds(time / 4);
-        moveFinnRight = false;
+        moveFinnLeft = false;
     }
 
-    IEnumerator SequenceTwo(){
+    IEnumerator SequenceThree(){
+        controls.canPause = false;
+        controls.inCutscene = true;
         // Finn
         // There you go
         audioSourceContainer.finnSource.PlayOneShot(thereYouGoClip);
@@ -214,6 +245,8 @@ public class AuditoryZoomSequence : SequenceBase
         yield return new WaitForSeconds(finnClips[8].length + 4f);
         // Finn puts the device on the player and an appropriate foley sound triggers denoting that the player now has it on. 
         // Finn
+        audioSourceContainer.protagActionSource.PlayOneShot(addedToInventoryClip);
+        yield return new WaitForSeconds(addedToInventoryClip.length);
         // Right, on the device, ok hold on, on the device press 1.
         audioSourceContainer.finnSource.PlayOneShot(finnClips[9]);
         yield return new WaitForSeconds(finnClips[9].length);
@@ -228,8 +261,8 @@ public class AuditoryZoomSequence : SequenceBase
             checkingForKeys = false;
             hasPressedKey = false;
             audioSourceContainer.protagActionSource.PlayOneShot(auditoryZoomClips[0]);
-            yield return new WaitForSeconds(auditoryZoomClips[0].length);
-            StartCoroutine(SequenceThree());
+            yield return new WaitForSeconds(auditoryZoomClips[0].length - 0.5f);
+            StartCoroutine(SequenceFour());
             yield break;
         } else {
             yield return new WaitForSeconds(0.5f);
@@ -237,7 +270,7 @@ public class AuditoryZoomSequence : SequenceBase
         }
     }
 
-    IEnumerator SequenceThree(){
+    IEnumerator SequenceFour(){
         // Finn
         // Wait… that can’t be it, no, press the I button.  
         audioSourceContainer.finnSource.PlayOneShot(finnClips[10]);
@@ -252,8 +285,8 @@ public class AuditoryZoomSequence : SequenceBase
             checkingForKeys = false;
             hasPressedKey = false;
             audioSourceContainer.protagActionSource.PlayOneShot(auditoryZoomClips[1]);
-            yield return new WaitForSeconds(auditoryZoomClips[1].length);
-            StartCoroutine(SequenceFour());
+            yield return new WaitForSeconds(auditoryZoomClips[1].length - 0.5f);
+            StartCoroutine(SequenceFive());
             yield break;
         } else {
             yield return new WaitForSeconds(0.5f);
@@ -261,7 +294,7 @@ public class AuditoryZoomSequence : SequenceBase
         }
     }
 
-    IEnumerator SequenceFour(){
+    IEnumerator SequenceFive(){
         // Finn
         // By the night, stupid thing! Okay, no I remember, it’s the space bar button/double tap that centre button there.
         audioSourceContainer.finnSource.PlayOneShot(finnClips[11]);
@@ -270,74 +303,70 @@ public class AuditoryZoomSequence : SequenceBase
         StartCoroutine(CheckIfPlayerZoomedAndHitDusklight());
     }
 
-    IEnumerator CheckIfZoomed(){
-        // There you go, fix your ears on Dusklight’s districts. 
-        if(controls.inZoom){
-			audioSourceContainer.finnSource.PlayOneShot(finnClips[20]); // this is quite lazy and I apologise sincerely.
-			yield return new WaitForSeconds(finnClips[20].length);
-            StartCoroutine(CheckIfPlayerZoomedAndHitDusklight());
-            yield break;
-        }
-        yield return new WaitForSeconds(0.01f);
-        StartCoroutine(CheckIfZoomed());
-    }
+    // IEnumerator CheckIfZoomed(){
+    //     // There you go, fix your ears on Dusklight’s districts. 
+    //     if(controls.inZoom){
+    //         Debug.Log("Check If Zoomed, in Zoom");
+	// 		audioSourceContainer.finnSource.PlayOneShot(finnClips[20]); // this is quite lazy and I apologise sincerely.
+	// 		yield return new WaitForSeconds(finnClips[20].length);
+    //         StartCoroutine(CheckIfPlayerZoomedAndHitDusklight());
+    //         yield break;
+    //     }
+    //     yield return new WaitForSeconds(0.01f);
+    //     StartCoroutine(CheckIfZoomed());
+    // }
 
     IEnumerator CheckIfPlayerZoomedAndHitDusklight(){
         pBFootstepSystem.canRotate = false;
-        audioSourceContainer.protagSource.transform.rotation = Quaternion.identity;
-        if(controls.inZoom && dusklightFocus.hit){
-            Debug.Log("hit dusklight");
+        audioSourceContainer.protagSource.transform.rotation = Quaternion.RotateTowards(audioSourceContainer.protagSource.transform.rotation, dusklightFocus.transform.rotation, 360);
+        if (controls.inZoom && dusklightFocus.hit){
             controls.lockZoom = true;
             zoomSound.disabledZoomSound = true;
-            StartCoroutine(SequenceFive());
+            StartCoroutine(SequenceSix());
             yield break;
         }
         yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfPlayerZoomedAndHitDusklight());
     }
 
-    IEnumerator SequenceFive(){
+    IEnumerator SequenceSix(){
         audioSourceContainer.protagActionSource.PlayOneShot(dusklightStereoClip, 0.5f);
         yield return new WaitForSeconds(dusklightStereoClip.length - 5f);
-        fadeDusklightAfterHit = true;
         // Finn
         // That sound… that’s why. 
         audioSourceContainer.finnSource.PlayOneShot(finnClips[12]);
         yield return new WaitForSeconds(finnClips[12].length);
+        zoomSound.disabledZoomSound = false;
+        controls.lockZoom = false;
+        pBFootstepSystem.canRotate = true;
         yield return new WaitForSeconds(6f);
         // Finn switches to the next line quickly. And speaks dismissively when mentioning Lambton. 
-        fadeDusklightAfterHit = false;
-        controls.lockZoom = false;
-        zoomSound.disabledZoomSound = false;
-        pBFootstepSystem.canRotate = true;
         // Finn
         // Aaannd on your right, you’ll hear a train approaching the city gates. 
         moveTrain = true;
         audioSourceContainer.finnSource.PlayOneShot(finnClips[13]);
         yield return new WaitForSeconds(finnClips[13].length);
-
         StartCoroutine(CheckIfHitTrain());
     }
 
     IEnumerator CheckIfHitTrain(){
         if(controls.inZoom && trainFocus.hit){
-            Debug.Log("hit train");
             controls.lockZoom = true;
             zoomSound.disabledZoomSound = true;
             pBFootstepSystem.canRotate = false;
-            StartCoroutine(SequenceSix());
+            StartCoroutine(SequenceSeven());
         } else {
             yield return new WaitForSeconds(0.01f);
             StartCoroutine(CheckIfHitTrain());
         }
     }
 
-    IEnumerator SequenceSix(){
+    IEnumerator SequenceSeven(){
         audioSourceContainer.protagActionSource.PlayOneShot(trainStereoClip, 0.5f);
         yield return new WaitForSeconds(trainStereoClip.length - 3f);
         pBFootstepSystem.canRotate = true;
-        controls.lockZoom = false;
         zoomSound.disabledZoomSound = false;
+        controls.lockZoom = false;
         // Finn talks again when the player identifies the train. 
         // Finn
         // Eugh, Lambton Energy. Paper pushers in their palaces, money grabbers in their mansions, the corporate kings of Dusklight. They might have the money, but believe me, it’s The Church that hold the power. 
@@ -352,22 +381,21 @@ public class AuditoryZoomSequence : SequenceBase
 
     IEnumerator CheckIfHitPumpingStation(){
         if (controls.inZoom && pumpingStationFocus.hit){
-            Debug.Log("hit pumping station");
             controls.lockZoom = true;
             zoomSound.disabledZoomSound = true;
             pBFootstepSystem.canRotate = false;
-            StartCoroutine(SequenceSeven());
+            StartCoroutine(SequenceEight());
             yield break;
         }
         yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfHitPumpingStation());
     }
 
-    IEnumerator SequenceSeven(){
+    IEnumerator SequenceEight(){
         audioSourceContainer.protagActionSource.PlayOneShot(pumpingStationStereoClip, 0.5f);
         yield return new WaitForSeconds(pumpingStationStereoClip.length - 3f);
-        controls.lockZoom = false;
         zoomSound.disabledZoomSound = false;
+        controls.lockZoom = false;
         pBFootstepSystem.canRotate = true;
         // Finn
         // That’s our target. The stations mine minerals for Lambton Energy. And apparently, the exact things we should be looking for are sitting nice and cosy like right in the overseers office. That’s the mission, get the docs and get the night out of there. Let’s do it. 
@@ -388,20 +416,21 @@ public class AuditoryZoomSequence : SequenceBase
 
     IEnumerator CheckIfNotInZoom(){
         if (!controls.inZoom){
-            StartCoroutine(SequenceEight());
+            StartCoroutine(SequenceNine());
             yield break;
         } 
-        controls.lockZoom = false;
         zoomSound.disabledZoomSound = false;
+        controls.lockZoom = false;
         yield return new WaitForSeconds(0.01f);
         StartCoroutine(CheckIfNotInZoom());
     }
 
-    IEnumerator SequenceEight(){
+    IEnumerator SequenceNine(){
         // Audio fades back to normal. 
         // Protag
         // Is there a button that turns off incompetent leaders?
         audioSourceContainer.protagSource.PlayOneShot(protagClips[1]);
+        audioMixer.SetFloat("POI_Vol", -10f);
         yield return new WaitForSeconds(protagClips[1].length);
 
         // Finn 
@@ -431,6 +460,8 @@ public class AuditoryZoomSequence : SequenceBase
     }
 
     void Finished(){
+        controls.canPause = true;
+        controls.inCutscene = false;
         audioSourceContainer.protagActionSource.PlayOneShot(cutsceneExitClip);
         finished = 1;
         quadbikeFinishedSequence.active = 1;

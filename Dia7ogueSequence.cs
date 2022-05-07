@@ -9,7 +9,9 @@ public class Dia7ogueSequence : MonoBehaviour
     [SerializeField] Controls controls;
     public int finished;
 
-    void OnTriggerEnter(Collider other){ if (other.gameObject.name == "Player") StartCoroutine(Sequence());}
+    void OnTriggerEnter(Collider other){ 
+        if (other.gameObject.name == "Player") StartCoroutine(Sequence());
+    }
 
     IEnumerator Sequence(){
         if (finished == 0 && !protagSource.isPlaying && controls.inExplore){

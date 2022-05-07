@@ -1,27 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class PlayerLostFightSequence : SequenceBase
 {
-    [SerializeField] AudioSource protagSource, protagReverbSource, guardSource, sirenSource, debrisSource, flashbackSource;
-    [SerializeField] AudioSource[] explosionSources, desertAmbienceSources;
+    [SerializeField] AudioSource protagSource, protagActionSource, protagReverbSource, guardSource;
+    [SerializeField] AudioSource[] desertAmbienceSources;
+    [SerializeField] AudioMixer audioMixer;
     [SerializeField] TurnOffOnEnter tannoyOne, tannoyTwo, tannoyThree;
-    [SerializeField] AudioClip[] protagClips, guardClips, explosionClips;
-    [SerializeField] AudioClip flashbackClip, batonClip;
+    [SerializeField] AudioClip[] protagClips, guardClips, playerFootstepClips, guardFootstepClips;
+    [SerializeField] AudioClip flashbackClip, batonClip, explosionClip;
     [SerializeField] Controls controls;
     [SerializeField] PBFootstepSystem pBFootstepSystem;
     [SerializeField] DarkVsLight darkVsLight;
     [SerializeField] AudioController audioController;
-    [SerializeField] ChangeFootsteps changeFootsteps;
-    [SerializeField] RemoveReverbTrigger removeReverbTrigger;
-    [SerializeField] EnableFromArray enableFromArray;
+    [SerializeField] DisableFromArray disableFromArray;
+    [SerializeField] EnableFromArray afterLostFightEnableFromArray;
     [SerializeField] AmbienceRepeater desertAmbienceRepeater;
-    bool guardWalksAway;
+    [SerializeField] ReverbManager reverbManager;
+    [SerializeField] EnemyFootsteps guardFootsteps;
+    bool guardWalksAway, inFlashback, transitioning;
+    float adjuster;
+    [SerializeField] GameObject doorObject, changeFootstepsObject, boundaryObject;
 
     void PlayOneShotWithVerb(AudioClip clip){
         protagSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip);
+        protagReverbSource.PlayOneShot(clip, 0.4f);
     }
 
     void FixedUpdate(){
@@ -31,18 +36,24 @@ public class PlayerLostFightSequence : SequenceBase
     public override IEnumerator Sequence(){
         if (finished == 0){
             if (active == 1){
+                boundaryObject.SetActive(false);
                 darkVsLight.playerDarkness += 1;
                 controls.inCutscene = true;
-                StartCoroutine(audioController.ReduceMasterCutOff(7.5f));
-                yield return new WaitForSeconds(7.5f);
-                foreach (AudioSource audioSource in desertAmbienceSources) audioSource.Stop();
+                StartCoroutine(audioController.ReduceMasterCutOff(3f));
+                yield return new WaitForSeconds(9f);
+                audioController.SetCutOffToZero();
+                reverbManager.turnedOn = true;
+                foreach (AudioSource audioSource in desertAmbienceSources) if(audioSource.gameObject.activeSelf) audioSource.Stop();
+                disableFromArray.DisableAllInArray();
+                afterLostFightEnableFromArray.EnableAllInArray();
                 desertAmbienceRepeater.stopped = true;
-                changeFootsteps.ChangePlayerFootsteps();
-                removeReverbTrigger.TriggerRemotely();
-                protagSource.gameObject.transform.position = new Vector3(72.4f, 0.3f, 460.9f);
+                pBFootstepSystem.footstepClips = playerFootstepClips;
+                guardFootsteps.footstepClips = guardFootstepClips;
+                protagSource.gameObject.transform.position = new Vector3(72.4f, 0.3f, 469.3f);
                 guardSource.gameObject.transform.position = new Vector3(70f, 0, 475.4f);
                 StartCoroutine(audioController.IncreaseMasterCutOff(7.5f));
-                yield return new WaitForSeconds(7.5f);
+                yield return new WaitForSeconds(9f);
+                guardSource.gameObject.SetActive(true);
                 // The audio fades back in and the guard speaks to the protag. The protag is now in a holding cell. 
                 // Guard 
                 // Nightlanders - your leader talks frequently of being trapped - Look up the definition of irony in your next life. 
@@ -64,27 +75,33 @@ public class PlayerLostFightSequence : SequenceBase
                 // Protag 
                 // Aghh! dammit, it’s happening again. Mmmm! 
                 PlayOneShotWithVerb(protagClips[1]);
-                yield return new WaitForSeconds(protagClips[1].length);
-                StartCoroutine(audioController.ReduceMasterCutOff(7.5f));
-                yield return new WaitForSeconds(7.5f);
+                yield return new WaitForSeconds(protagClips[1].length - 2f);
+                StartCoroutine(audioController.ReduceExposedParameterCutOff("OtherSources_CutOff", 5f));
                 guardSource.gameObject.SetActive(false);
-                // FLASHBACK 
-                flashbackSource.PlayOneShot(flashbackClip);
-                yield return new WaitForSeconds(flashbackClip.length);
-                StartCoroutine(audioController.IncreaseMasterCutOff(7.5f));
-                yield return new WaitForSeconds(7.5f);
+                pBFootstepSystem.canRotate = false;
+                protagSource.transform.rotation = Quaternion.identity;
+                protagActionSource.PlayOneShot(flashbackClip);
+                yield return new WaitForSeconds(flashbackClip.length + 5f);
+                StartCoroutine(audioController.IncreaseExposedParameterCutOff("OtherSources_CutOff", 5f));
+                yield return new WaitForSeconds(5f);
                 // Audio then returns to normal via a textural fade. As the audio fades in/out, the player suddenly hears a siren and debris falling in the near distance. 
-
                 // Protag
                 // Gotta get out, and quick! Right, gotta be a way to get this door open… 
                 PlayOneShotWithVerb(protagClips[2]);
                 yield return new WaitForSeconds(protagClips[2].length);
-                foreach (AudioSource explosionSource in explosionSources) explosionSource.PlayOneShot(explosionClips[Random.Range(0, explosionClips.Length)]);
+                protagActionSource.PlayOneShot(explosionClip);
+                yield return new WaitForSeconds(explosionClip.length - 10.5f);
+                StartCoroutine(tannoyOne.Sequence());
+                StartCoroutine(tannoyTwo.Sequence());
+                StartCoroutine(tannoyThree.Sequence());
+                doorObject.SetActive(false);
+                pBFootstepSystem.canRotate = true;
+                controls.inCutscene = false;
+                audioMixer.SetFloat("Footsteps_Vol", 0f);
                 yield return new WaitForSeconds(5f);
                 // After another five seconds of impending audio and panic, the gate is destroyed by debris. The protagonist is thrown backwards. They then get up and proceed as normal. 
                 // Protag 
                 // Blast blew the door right open. What do they say? Luck of the… Nightlanders is it? Lets see if that luck can find us those docs.  
-                enableFromArray.EnableAllInArray();
                 PlayOneShotWithVerb(protagClips[3]);
                 yield return new WaitForSeconds(protagClips[3].length);
                 StartCoroutine(Finished());
@@ -96,9 +113,6 @@ public class PlayerLostFightSequence : SequenceBase
         controls.inCutscene = false;
         controls.canZoom = true;
         darkVsLight.SetTrappedWorkerVol();
-        StartCoroutine(tannoyOne.Sequence());
-        StartCoroutine(tannoyTwo.Sequence());
-        StartCoroutine(tannoyThree.Sequence());
         finished = 1;
         yield break;
     }
