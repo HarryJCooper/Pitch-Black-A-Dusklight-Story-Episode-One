@@ -18,6 +18,10 @@ public class SaveAndLoadEncampment : MonoBehaviour
     [SerializeField] GameObject bunkerObject;
     [SerializeField] Controls controls;
     [SerializeField] PlaySound windSweetenerPlaySound;
+    public bool loadStartOfEncampment;
+    [SerializeField] PlayClipWithInterval megapedeOnePlayClipWithInterval, megapedeTwoPlayClipWithInterval, guitarPlayClipWithInterval;
+    [SerializeField] AmbienceRepeater fountainRepeater;
+
 
     public void FinishedEncampment(){ PlayerPrefs.SetInt("bunkerAndEncampment", 1);}
 
@@ -44,22 +48,29 @@ public class SaveAndLoadEncampment : MonoBehaviour
     }
     
     void LoadAfterFinnInBunkerSequence(){
+        megapedeOnePlayClipWithInterval.turnedOn = true;
+        StartCoroutine(megapedeOnePlayClipWithInterval.LoopClips());
+        megapedeTwoPlayClipWithInterval.turnedOn = true;
+        StartCoroutine(megapedeTwoPlayClipWithInterval.LoopClips());
+        guitarPlayClipWithInterval.turnedOn = true;
+        StartCoroutine(guitarPlayClipWithInterval.LoopClips());
         windSweetenerPlaySound.hasTriggered = true;
+        fountainRepeater.turnedOn = true;
+        StartCoroutine(fountainRepeater.ambienceCoroutine);
         controls.canZoom = false;
         bunkerObject.SetActive(false);
         if (secretSequence.finished == 0 && auditoryZoomSequence.finished == 0){
             secretSequence.active = 1;
             StartCoroutine(secretSequence.Sequence());
-            return;
         }
-        if (mechanicSequence.finished == 1  && encampmentCombatSequence.finished == 1 && aroundTableSequence.finished == 1 && auditoryZoomSequence.finished == 0){
+        if (mechanicSequence.finished == 1 && encampmentCombatSequence.finished == 1 && aroundTableSequence.finished == 1 && auditoryZoomSequence.finished == 0){
             auditoryZoomSequence.CheckIfShouldStart();
             return;
         }
         if (auditoryZoomSequence.finished == 1){
             controls.canZoom = true;
             quadbikeFinishedSequence.active = 1;
-            StartCoroutine(quadbikeFinishedSequence.Sequence());
+            StartCoroutine(quadbikeFinishedSequence.SequenceLoop());
         }
     }
 
@@ -107,17 +118,23 @@ public class SaveAndLoadEncampment : MonoBehaviour
         auditoryZoomSequence.finished = 0;
         mechanicSequence.finished = 0;
         secretSequence.finished = 0;
+        StartCoroutine(finnInBunkerSequence.Sequence());
     }
 
     void LoadEncampment(){
-        LoadEncampmentSequences();
-        LoadPlayerPosition(); 
-        LoadDarkVsLight();
-        LoadOther();
+        if(loadStartOfEncampment && Application.isEditor){
+            LoadStartOfEncampment();
+        } else {
+            LoadEncampmentSequences();
+            LoadPlayerPosition(); 
+            LoadDarkVsLight();
+            LoadOther();
+        }
     }
 
     void Start(){ 
         PlayerPrefs.SetInt("inMainMenu", 0);
-        LoadEncampment(); 
+        LoadEncampment();
+        LoadingData.hasLoaded = true;
     }
 }

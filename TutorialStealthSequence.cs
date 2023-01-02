@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using DearVR;
 
 public class TutorialStealthSequence : SequenceBase
 {
@@ -10,6 +12,7 @@ public class TutorialStealthSequence : SequenceBase
     [SerializeField] AudioClip[] charlieClips, charlieLoopClips, playerClips, playerFootstepClips;
     [SerializeField] AudioClip crouchClipComp, crouchClipMob, swooshSFXClip, doorClip;
     [SerializeField] AudioSource charlieSource, motherSource, playerSource, protagReverbSource, doorSource;
+    DearVRSource charlieVRSource, motherVRSource, protagReverbVRSource, doorVRSource;
     [SerializeField] AudioMixer audioMixer;
     bool sequenceFinished, walk;
     [SerializeField] float walkSpeedZ, maxDistanceFromCharlie;
@@ -20,16 +23,36 @@ public class TutorialStealthSequence : SequenceBase
     [SerializeField] PBFootstepSystem pBFootstepSystem;
     [SerializeField] AmbienceRepeater ambienceRepeater;
     IEnumerator stealthTutorialCoroutine;
+    [SerializeField] string[] mobileWords, computerWords;
+    [SerializeField] Text instructionText;
+    string sentence;
+    string[] words;
+
+    IEnumerator WriteSentence(){
+        foreach (string word in words){
+            instructionText.text = instructionText.text += (word + " ");
+            yield return new WaitForSeconds(0.3f);
+        }
+        yield break;
+    }
 
     void PlayOneShotWithVerb(AudioClip clip){
         playerSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip);
+        protagReverbVRSource.DearVRPlayOneShot(clip);
     }
 
     // REMOVE ON BUILD
-    void Awake(){active = 0;}
+    void Awake(){
+        active = 0;
+        charlieVRSource = charlieSource.GetComponent<DearVRSource>();
+        motherVRSource = motherSource.GetComponent<DearVRSource>();
+        protagReverbVRSource = protagReverbSource.GetComponent<DearVRSource>();
+        doorVRSource = doorSource.GetComponent<DearVRSource>();
+    }
 
-    void FixedUpdate(){ if (walk) Walk(charlieSource.transform, walkSpeedZ);}
+    void FixedUpdate(){ 
+        if (walk) Walk(charlieSource.transform, walkSpeedZ);
+    }
 
     void Setup(){
         pBFootstepSystem.footstepClips = playerFootstepClips;
@@ -68,24 +91,25 @@ public class TutorialStealthSequence : SequenceBase
     }
 
     public override IEnumerator Sequence(){
+        instructionText.text = "";
         if (skip && Application.isEditor){
             StartCoroutine(Outro());
             yield break;
         }
         motherSource.transform.position = new Vector3(-5, 0.3f, 10); // sets Mum behind the wall
         Setup();
-        motherSource.Play();
+        motherVRSource.DearVRPlay();
         StartCoroutine(audioController.IncreaseMasterCutOff(10f)); 
         yield return new WaitForSeconds(8f);
         stealthTutorial.turnedOn = true;
-        
+
         // INT. HOUSE – DAY.
         // The next tutorial is a stealth tutorial. The protag is older now, sevenish. Him and his brothers are trying to sneak out of the house. 
         // All characters are whispering for this sequence. Besides mother, who’s bitterly muttering. 
 
         // Charlie 
         // Come on big brother, let’s get out of here, we just gotta sneak past mom, and then we’re free!
-        charlieSource.PlayOneShot(charlieClips[0]);
+        charlieVRSource.DearVRPlayOneShot(charlieClips[0]);
         yield return new WaitForSeconds(charlieClips[0].length);
 
         // Mother can be heard clanging in the kitchen, frustrated and showing signs of instability. 
@@ -97,7 +121,7 @@ public class TutorialStealthSequence : SequenceBase
 
         // Charlie 
         // Alright, just gotta stay low and move slowly. You wait here.
-        charlieSource.PlayOneShot(charlieClips[1]);
+        charlieVRSource.DearVRPlayOneShot(charlieClips[1]);
         yield return new WaitForSeconds(charlieClips[1].length);
 
         // The brother moves past the kitchen doorway. 
@@ -112,7 +136,15 @@ public class TutorialStealthSequence : SequenceBase
 
         // Charlie 
         // Come on you next. Tap control to sneak and then move forward/swipe down to sneak and then move forward.
-        charlieSource.PlayOneShot(charlieClips[2]);
+
+        if (controls.mobile){
+            words = mobileWords;
+        } else {
+            words = computerWords;
+        }
+        StartCoroutine(WriteSentence());
+        
+        charlieVRSource.DearVRPlayOneShot(charlieClips[2]);
         yield return new WaitForSeconds(charlieClips[2].length);
         doorSource.PlayOneShot(doorClip);
         yield return new WaitForSeconds(0.2f);
@@ -131,7 +163,7 @@ public class TutorialStealthSequence : SequenceBase
         if (Vector3.Distance(charlieSource.transform.position, playerSource.transform.position) > maxDistanceFromCharlie && !stealthTutorial.beenCaught){
             // Charlie 
             // Over here, come on, brother. This way. Gotta move to me, then we can get out of here.
-            charlieSource.PlayOneShot(charlieClips[3]);
+            charlieVRSource.DearVRPlayOneShot(charlieClips[3]);
             StartCoroutine(CheckIfComplete());
             StartCoroutine(LoopClips());
         } else {
@@ -148,7 +180,7 @@ public class TutorialStealthSequence : SequenceBase
         yield return new WaitForSeconds(12f);
         if (controls.inCutscene) yield break;
         if (!charlieSource.isPlaying){
-            charlieSource.PlayOneShot(charlieLoopClips[Random.Range(0, charlieLoopClips.Length)]);
+            charlieVRSource.DearVRPlayOneShot(charlieLoopClips[Random.Range(0, charlieLoopClips.Length)]);
             StartCoroutine(LoopClips());
         } else {
             StartCoroutine(LoopClips());
@@ -157,12 +189,15 @@ public class TutorialStealthSequence : SequenceBase
     }
 
     IEnumerator CheckIfComplete(){
-        if ((Vector3.Distance(charlieSource.transform.position, playerSource.transform.position) < maxDistanceFromCharlie)){
-            charlieSource.Stop();
+        if (controls.inCutscene) yield break;
+        if ((Vector3.Distance(charlieSource.transform.position, playerSource.transform.position) < maxDistanceFromCharlie)
+            || playerSource.transform.position.z > charlieSource.transform.position.z){
+            charlieVRSource.DearVRStop();
+            instructionText.text = "";
             StartCoroutine(Outro());
             yield break;
         } else {
-            yield return new WaitForSeconds(0f);
+            yield return new WaitForSeconds(0.1f);
             StartCoroutine(CheckIfComplete());
         }
     }
@@ -172,12 +207,12 @@ public class TutorialStealthSequence : SequenceBase
         // Charlie
         // Yes! We did it little brother. Free at last, we’ll never let anyone hold us down… ever.	
         finished = 1;
-        charlieSource.PlayOneShot(charlieClips[4]);
+        charlieVRSource.DearVRPlayOneShot(charlieClips[4]);
         stealthTutorial.turnedOn = false;
         controls.inStealth = false;
         ambienceRepeater.stopped = true;
         audioMixer.SetFloat("Mother_InitialVol", -80f);
-        motherSource.Stop();
+        motherVRSource.DearVRStop();
         yield return new WaitForSeconds(charlieClips[4].length);
         playerSource.PlayOneShot(swooshSFXClip);
         StartCoroutine(audioController.ReduceMasterCutOff(10f));
@@ -185,6 +220,12 @@ public class TutorialStealthSequence : SequenceBase
         yield return new WaitForSeconds(12f);
         finished = 1;
         PlayerPrefs.SetInt("tutorial", 1);
-        SceneManager.LoadScene("BunkerAndEncampment");
+        LoadLevel();
+    }
+
+    void LoadLevel(){
+        LoadingData.sceneToLoad = "BunkerAndEncampment";
+        LoadingData.hasLoaded = false;
+        SceneManager.LoadSceneAsync("Loading");
     }
 }

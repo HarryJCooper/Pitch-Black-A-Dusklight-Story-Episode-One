@@ -17,6 +17,12 @@ public class SecretSequence : SequenceBase
             if (triggered == 1 ){
                 doorObject.volumeReduction = 10;
                 doorObject.frequencyReduction = 21000;
+                Vector3 finnVector3 = new Vector3(
+                    audioSourceContainer.finnSource.gameObject.transform.position.x,
+                    audioSourceContainer.finnSource.gameObject.transform.position.y,
+                    audioSourceContainer.finnSource.gameObject.transform.position.z
+                );
+                audioSourceContainer.finnSource.gameObject.transform.position = new Vector3(0, 0.3f, 10f);
                 audioSourceContainer.milesSource.gameObject.SetActive(true);
                 audioSourceContainer.protagActionSource.PlayOneShot(cutsceneEnterClip);
                 yield return new WaitForSeconds(cutsceneEnterClip.length);
@@ -35,6 +41,7 @@ public class SecretSequence : SequenceBase
                 // Listen, I don’t want to hear it… He’s gonna be meeting Archie, if anything happens, he’ll let us know, and we’ll have got what we wanted. That’s the end of it. 
                 audioSourceContainer.finnSource.PlayOneShot(finnClips[1]);
                 yield return new WaitForSeconds(finnClips[1].length);
+                audioSourceContainer.finnSource.gameObject.transform.position = finnVector3;
 
                 // The protag’s tone is distrust worthy for the first sentence, and then cunning for the second. 
                 // Protag 
@@ -52,6 +59,7 @@ public class SecretSequence : SequenceBase
     void Finished(){
         bunkerObject.SetActive(false);
         audioSourceContainer.protagActionSource.PlayOneShot(cutsceneExitClip);
+        
         finished = 1;
         saveAndLoadEncampment.SaveEncampment();
     }

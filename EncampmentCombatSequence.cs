@@ -2,13 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using DearVR;
 
 public class EncampmentCombatSequence : SequenceBase
 {
-    [SerializeField] AudioClip playerAttackClip, distantBirdClip, enterTheRingClip;
+    [SerializeField] AudioClip playerAttackClip, distantBirdClip, enterTheRingClip, againClip;
     [SerializeField] AudioClip[] loopClips, playerParryClips, playerClips, laraClips, mobileClips, playerBeenHitClips, laraBeenHitClips, laraBeenParriedClips, laraAttackClips, 
     playerPunchClips, laraPunchClips;
     [SerializeField] AudioSource laraSource, distantBirdSource;
+    DearVRSource laraVRSource, distantBirdVRSource;
     [SerializeField] float maxDistanceFromPlayer, angleToEnemy, playersMaxAngleToMiss;
     [SerializeField] Controls controls;
     int laraAttackInt, laraParryInt, randomInt;
@@ -23,7 +25,12 @@ public class EncampmentCombatSequence : SequenceBase
     public bool startedSequence;
     [SerializeField] SaveAndLoadEncampment saveAndLoadEncampment;
     [SerializeField] AudioController audioController;
+    [SerializeField] PlayClipWithInterval guitarPlayClipWithInterval;
 
+    void Awake(){
+        laraVRSource = laraSource.GetComponent<DearVRSource>();
+        distantBirdVRSource = distantBirdSource.GetComponent<DearVRSource>();
+    }
 
     #region HELPER FUNCTIONS
     void SetClips(){
@@ -49,9 +56,11 @@ public class EncampmentCombatSequence : SequenceBase
         if (finished == 1) yield break;
         SetClips();
         if (startedSequence){
+            guitarPlayClipWithInterval.turnedOn = false;
             audioMixer.SetFloat("Lara_Vol", -10f);
             controls.inCutscene = true;
-            laraSource.Stop();
+            controls.canPause = false;
+            laraVRSource.DearVRStop();
             audioSourceContainer.protagActionSource.PlayOneShot(cutsceneEnterClip);
             yield return new WaitForSeconds(cutsceneEnterClip.length / 2);
             audioSourceContainer.protagSource.transform.position = new Vector3 (laraSource.transform.position.x - 2f, 0.3f, laraSource.transform.position.z);
@@ -60,7 +69,7 @@ public class EncampmentCombatSequence : SequenceBase
             checkForAttack = false;
             // Lara
             // Oh listen, it’s the new guy. Finn said I should show you a few moves, hope you don’t mind getting your butt beat by a woman. 
-            laraSource.PlayOneShot(laraClips[0]);
+            laraVRSource.DearVRPlayOneShot(laraClips[0]);
             yield return new WaitForSeconds(laraClips[0].length);
             
             // Protag
@@ -70,13 +79,13 @@ public class EncampmentCombatSequence : SequenceBase
 
             // Lara
             // Get in here... rookie. 
-            laraSource.PlayOneShot(laraClips[1]);
+            laraVRSource.DearVRPlayOneShot(laraClips[1]);
             yield return new WaitForSeconds(laraClips[1].length);
             StartCoroutine(EnterTheRing());
         } else {
             yield return new WaitForSeconds(5f); // this is here to stop initial punch sound on load in
             if (startedSequence) yield break;
-            laraSource.PlayOneShot(loopClips[Random.Range(0, loopClips.Length)]);
+            laraVRSource.DearVRPlayOneShot(loopClips[Random.Range(0, loopClips.Length)]);
             yield return new WaitForSeconds(loopClips[0].length);
             if (startedSequence) yield break;
             StartCoroutine(Sequence());
@@ -102,13 +111,13 @@ public class EncampmentCombatSequence : SequenceBase
         // Lara
         // Alright, you seem like you can handle yourself, let’s go over what you know and then we can refine some stuff from there.
         ringObject.SetActive(true);
-        audioSourceContainer.protagSource.transform.position = new Vector3(36.3f, 0.3f, 46.5f);
+        audioSourceContainer.protagSource.transform.position = new Vector3(48.3f, 0.3f, 46.5f);
         pBFootstepSystem.canRotate = false;
         audioSourceContainer.protagActionSource.PlayOneShot(enterTheRingClip, 0.2f);
         yield return new WaitForSeconds(enterTheRingClip.length);
         audioController.PlayMusic("combat", 0.02f);
         pBFootstepSystem.canRotate = true;
-        laraSource.PlayOneShot(laraClips[2]);
+        laraVRSource.DearVRPlayOneShot(laraClips[2]);
         yield return new WaitForSeconds(laraClips[2].length);
         controls.inCutscene = false;
         moveLara = true;
@@ -121,7 +130,7 @@ public class EncampmentCombatSequence : SequenceBase
         // Remember, you gotta face your opponent to hit them, and you can't hit them if you’re at the other end of the ring 
         yield return new WaitForSeconds(2f);
         if (tooFarToHit && !laraSource.isPlaying && !havePlayedDialogue){
-            laraSource.PlayOneShot(laraClips[3]);
+            laraVRSource.DearVRPlayOneShot(laraClips[3]);
             yield return new WaitForSeconds(laraClips[3].length);
             havePlayedDialogue = true;
             yield return new WaitForSeconds(4f);
@@ -138,7 +147,7 @@ public class EncampmentCombatSequence : SequenceBase
         // Try holding the space bar for a attack/Try double tap and holding for a attack
         checkForAttack = true;
         if(!havePlayedDialogue){
-            laraSource.PlayOneShot(laraClips[4]);
+            laraVRSource.DearVRPlayOneShot(laraClips[4]);
             yield return new WaitForSeconds(laraClips[4].length);
             havePlayedDialogue = true;
             StartCoroutine(Attack());
@@ -148,9 +157,9 @@ public class EncampmentCombatSequence : SequenceBase
             audioSourceContainer.protagSource.Stop();
             audioSourceContainer.protagSource.PlayOneShot(playerAttackClip);
             yield return new WaitForSeconds(playerAttackClip.length);
-            laraSource.Stop();
-            laraSource.PlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
-            laraSource.PlayOneShot(laraBeenHitClips[Random.Range(0, laraBeenHitClips.Length)]);
+            laraVRSource.DearVRStop();
+            laraVRSource.DearVRPlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
+            laraVRSource.DearVRPlayOneShot(laraBeenHitClips[Random.Range(0, laraBeenHitClips.Length)]);
             yield return new WaitForSeconds(1f);
             havePlayedDialogue = false;
             checkForAttack = false;
@@ -168,15 +177,15 @@ public class EncampmentCombatSequence : SequenceBase
         // it’s almost as if they’re just giving you a prompt…
         if(!havePlayedDialogue){
             distantBirdSource.gameObject.SetActive(true);
-            laraSource.PlayOneShot(laraClips[6]);
+            laraVRSource.DearVRPlayOneShot(laraClips[6]);
             yield return new WaitForSeconds(laraClips[6].length);
             havePlayedDialogue = true;
             // A distant bird sound with a wind gush denotes the awkwardness of the joke. 
-            distantBirdSource.PlayOneShot(distantBirdClip);
+            distantBirdVRSource.DearVRPlayOneShot(distantBirdClip);
             yield return new WaitForSeconds(distantBirdClip.length - 1f);
             // Lara
             // I’ll throw a few punches. You just need to parry. Press enter to parry/swipe up at the right time and you’re golden. 
-            laraSource.PlayOneShot(laraClips[7]);
+            laraVRSource.DearVRPlayOneShot(laraClips[7]);
             yield return new WaitForSeconds(laraClips[7].length);
             distantBirdSource.gameObject.SetActive(false);
             StartCoroutine(Parry());
@@ -194,12 +203,12 @@ public class EncampmentCombatSequence : SequenceBase
 
     IEnumerator EnemyAttack(){
         laraAttackInt = RandomNumberGen("Attack");
-        laraSource.PlayOneShot(laraAttackClips[laraAttackInt]);
+        laraVRSource.DearVRPlayOneShot(laraAttackClips[laraAttackInt]);
         canParry = true;
         yield return new WaitForSeconds(laraAttackClips[laraAttackInt].length);
         canParry = false;
         if (!hasParried) {
-            laraSource.PlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
+            laraVRSource.DearVRPlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
             audioSourceContainer.protagSource.PlayOneShot(playerBeenHitClips[Random.Range(0, playerBeenHitClips.Length)]);
             yield return new WaitForSeconds(1.5f);
             StartCoroutine(EnemyAttack());
@@ -219,13 +228,13 @@ public class EncampmentCombatSequence : SequenceBase
 
     IEnumerator EnemyAttackAgain(){
         laraAttackInt = RandomNumberGen("Attack");
-        laraSource.PlayOneShot(laraAttackClips[laraAttackInt]);
+        laraVRSource.DearVRPlayOneShot(laraAttackClips[laraAttackInt]);
         canParry = true;
         yield return new WaitForSeconds(laraAttackClips[laraAttackInt].length);
         canParry = false;
         yield return new WaitForSeconds(2f);
         if (!hasParried) {
-            laraSource.PlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
+            laraVRSource.DearVRPlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
             audioSourceContainer.protagSource.PlayOneShot(playerBeenHitClips[Random.Range(0, playerBeenHitClips.Length)]);
             yield return new WaitForSeconds(1.5f);
             StartCoroutine(EnemyAttackAgain());
@@ -236,7 +245,7 @@ public class EncampmentCombatSequence : SequenceBase
 
     void FinishedWithoutFighting(){
         controls.inCombat = false;
-        laraSource.Stop();
+        laraVRSource.DearVRStop();
         audioSourceContainer.protagSource.Stop();
         StartCoroutine(audioController.FadeMusic());
         moveLara = false;
@@ -247,9 +256,9 @@ public class EncampmentCombatSequence : SequenceBase
     IEnumerator Finished(){
         StartCoroutine(audioController.FadeMusic());
         controls.inCombat = false;
-        laraSource.Stop();
+        laraVRSource.DearVRStop();
         audioSourceContainer.protagSource.Stop();
-        laraSource.PlayOneShot(laraClips[9]);
+        if (!laraSource.isPlaying) laraVRSource.DearVRPlayOneShot(laraClips[9]);
         yield return new WaitForSeconds(laraClips[9].length - 0.5f);
         moveLara = false;
         audioMixer.SetFloat("Lara_Vol", -5f);
@@ -259,6 +268,7 @@ public class EncampmentCombatSequence : SequenceBase
 
     IEnumerator CheckDecision(){
         StartCoroutine(decisionPrompt.DecisionLoop());
+        StartCoroutine(decisionPrompt.DecisionLoopTwo());
         decisionPrompt.lightOrDarkDecision = 1;
         StartCoroutine(CheckDecisionLoop());
         yield break;
@@ -266,7 +276,10 @@ public class EncampmentCombatSequence : SequenceBase
 
     IEnumerator CheckDecisionLoop(){
         if (decisionPrompt.lightOrDarkDecision == 3){
-            laraSource.PlayOneShot(laraClips[11]);
+            audioSourceContainer.protagSource.PlayOneShot(againClip);
+            yield return new WaitForSeconds(againClip.length);
+            if (laraSource.isPlaying) yield break;
+            laraVRSource.DearVRPlayOneShot(laraClips[11]);
             yield return new WaitForSeconds(laraClips[11].length);
             laraCombatSequence.enteredCombat = true;
             laraCombatSequence.AssignCoroutine("EnterCombat");
@@ -274,15 +287,18 @@ public class EncampmentCombatSequence : SequenceBase
             yield break;
         } 
         if (decisionPrompt.lightOrDarkDecision == 2){
+            guitarPlayClipWithInterval.TriggerRemotely();
             // Lara
             // Fair enough you can always choose not to fight.
-            laraSource.PlayOneShot(laraClips[10]);
-            yield return new WaitForSeconds(laraClips[10].length);
+            if (laraSource.isPlaying) yield break;
+            laraVRSource.DearVRPlayOneShot(laraClips[10]);
+            yield return new WaitForSeconds(laraClips[10].length - 1f);
             audioSourceContainer.protagActionSource.PlayOneShot(enterTheRingClip, 0.2f);
             yield return new WaitForSeconds(enterTheRingClip.length);
             auditoryZoomSequence.CheckIfShouldStart();
             audioSourceContainer.protagActionSource.PlayOneShot(cutsceneExitClip);
             ringObject.SetActive(false);
+            controls.canPause = true;
             saveAndLoadEncampment.SaveEncampment();
             yield break;
         }
@@ -295,10 +311,10 @@ public class EncampmentCombatSequence : SequenceBase
 
     void CheckForParry(){
         if (!controls.parry || !canParry || hasParried) return;    
-        laraSource.Stop();
+        laraVRSource.DearVRStop();
         audioSourceContainer.protagActionSource.PlayOneShot(playerParryClips[Random.Range(0, playerParryClips.Length)]);
         laraParryInt = RandomNumberGen("Parry");
-        laraSource.PlayOneShot(laraBeenParriedClips[laraParryInt]);
+        laraVRSource.DearVRPlayOneShot(laraBeenParriedClips[laraParryInt]);
         hasParried = true;
     }
 

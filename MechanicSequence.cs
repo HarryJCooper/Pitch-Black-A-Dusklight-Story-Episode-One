@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DearVR;
 
 public class MechanicSequence : SequenceBase
 {
@@ -11,23 +12,28 @@ public class MechanicSequence : SequenceBase
     [SerializeField] Controls controls;
     public bool startedSequence;
     float distanceFromPlayer;
+
+    public void StartSequence(){
+        StartCoroutine(Sequence());
+    }
     
     //   For when the player finds the mechanic, instructed by Finn, but the vehicle isn’t ready quite yet. The mechanic informs the player of this. He is fixing things in his shed. Donnie sounds like an aggressive, OCD riddled man; stressed at every turn and somewhat pathetic because of it. 
     public override IEnumerator Sequence(){
         yield return new WaitForSeconds(0.6f);
         if (finished == 0 && startedSequence){
             controls.inCutscene = true;
+            if (audioSourceContainer.protagActionSource.isPlaying) yield break;
             audioSourceContainer.protagActionSource.PlayOneShot(cutsceneEnterClip);
             yield return new WaitForSeconds(cutsceneEnterClip.length);
             // Protag 
-            // Hey… HEY! 
+            // Hey… HEY!
             audioSourceContainer.protagSource.PlayOneShot(protagClips[0]);
             yield return new WaitForSeconds(protagClips[0].length);
-            audioSourceContainer.donnieSource.Stop();
+            audioSourceContainer.donnieVRSource.DearVRStop();
             // Mechanic shop loop should cut here, should still have some shed ambience. 
             // Donnie
             // What?!
-            audioSourceContainer.donnieSource.PlayOneShot(donnieClips[0]);
+            audioSourceContainer.donnieVRSource.DearVRPlayOneShot(donnieClips[0]);
             yield return new WaitForSeconds(donnieClips[0].length);
 
             // Protag
@@ -37,7 +43,7 @@ public class MechanicSequence : SequenceBase
 
             // Donnie
             // Oh yeah? well it ain’t! These things take time you know. You think quadbikes grow on trees man?
-            audioSourceContainer.donnieSource.PlayOneShot(donnieClips[1]);
+            audioSourceContainer.donnieVRSource.DearVRPlayOneShot(donnieClips[1]);
             yield return new WaitForSeconds(donnieClips[1].length);
 
             // Protag
@@ -47,7 +53,7 @@ public class MechanicSequence : SequenceBase
 
             // Donnie 
             // Exactly, even if trees did still exist, I’d be surprised if fully functional quadbikes grew on them. Then again, I don’t know for sure… j-just go wait somewhere else and I’ll call you when it's ready. 
-            audioSourceContainer.donnieSource.PlayOneShot(donnieClips[2]);
+            audioSourceContainer.donnieVRSource.DearVRPlayOneShot(donnieClips[2]);
             yield return new WaitForSeconds(donnieClips[2].length);
 
             // Protag
@@ -57,7 +63,7 @@ public class MechanicSequence : SequenceBase
 
             // Donnie
             // I heard that!
-            audioSourceContainer.donnieSource.PlayOneShot(donnieClips[3]);
+            audioSourceContainer.donnieVRSource.DearVRPlayOneShot(donnieClips[3]);
             yield return new WaitForSeconds(donnieClips[3].length);
 
             controls.inCutscene = false;
@@ -72,7 +78,7 @@ public class MechanicSequence : SequenceBase
         } else {
             if (PlayerPrefs.GetInt("auditoryZoomSequence") == 1) yield break;
             if (startedSequence) yield break;
-            audioSourceContainer.donnieSource.PlayOneShot(loopClips[Random.Range(0, loopClips.Length)]);
+            audioSourceContainer.donnieVRSource.DearVRPlayOneShot(loopClips[Random.Range(0, loopClips.Length)]);
             yield return new WaitForSeconds(16f);
             if (startedSequence){
                 yield break;

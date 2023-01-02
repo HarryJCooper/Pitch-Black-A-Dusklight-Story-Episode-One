@@ -7,6 +7,7 @@ using DearVR;
 public class Explosion : MonoBehaviour
 {
     [SerializeField] AudioSource playerSource, playerActionSource, pumpingStationSource, tannoy1Source, malfunctioningDoorSource, playerReverbSource;
+    DearVRSource pumpingStationVRSource, tannoy1VRSource, malfunctioningDoorVRSource, playerReverbVRSource;
     [SerializeField] AmbienceRepeater desertAmbienceRepeater, pumpingStationAmbienceRepeater;
     [SerializeField] AudioClip playerClip, stopClip, tanoyDieingClip, malfunctioningDoorDieing, explosionClip, postExplosionSweetener;
     [SerializeField] AudioClip[] playerFootstepClips;
@@ -25,9 +26,21 @@ public class Explosion : MonoBehaviour
     [SerializeField] SaveAndLoadPumpingStation saveAndLoadPumpingStation;
     public int finished;
 
+    void Start(){
+        pumpingStationVRSource = pumpingStationSource.GetComponent<DearVRSource>();
+        tannoy1VRSource = tannoy1Source.GetComponent<DearVRSource>();
+        malfunctioningDoorVRSource = malfunctioningDoorSource.GetComponent<DearVRSource>();
+        playerReverbVRSource = playerReverbSource.GetComponent<DearVRSource>();
+        pumpingStationVRSource.performanceMode = true;
+        tannoy1VRSource.performanceMode = true;
+        malfunctioningDoorVRSource.performanceMode = true;
+        playerReverbVRSource.performanceMode = true;
+    }
+
     void PlayOneShotWithVerb(AudioClip clip){
         playerSource.PlayOneShot(clip);
-        playerReverbSource.PlayOneShot(clip, 0.4f);
+        playerReverbSource.volume = 0.4f;
+        playerReverbVRSource.DearVRPlayOneShot(clip);
     }
 
     void OnTriggerEnter(Collider other){
@@ -50,23 +63,23 @@ public class Explosion : MonoBehaviour
         guardCombatSequence.enabled = false;
         StartCoroutine(audioController.FadeMusic());
         yield return new WaitForSeconds(2f);
-        malfunctioningDoorSource.Stop();
+        malfunctioningDoorVRSource.DearVRStop();
         desertBoundary.turnedOn = false;
         desertBoundary.gameObject.SetActive(false);
         // INT. PUMPING STATION – NIGHT
         // HARRY NOTE - Player walks through door and gets blasted by explosion (probz behind), then wakes up. Says something like: 
-        tannoy1Source.Stop();
-        tannoy1Source.PlayOneShot(tanoyDieingClip);
-        malfunctioningDoorSource.Stop();
-        malfunctioningDoorSource.PlayOneShot(malfunctioningDoorDieing);
+        tannoy1VRSource.DearVRStop();
+        tannoy1VRSource.DearVRPlayOneShot(tanoyDieingClip);
+        malfunctioningDoorVRSource.DearVRStop();
+        malfunctioningDoorVRSource.DearVRPlayOneShot(malfunctioningDoorDieing);
         playerActionSource.PlayOneShot(explosionClip);
         darkVsLight.playerDarkness -= 1;
         pBFootstepSystem.canRotate = false;
         controls.inCutscene = true;
         pBFootstepSystem.footstepClips = playerFootstepClips;
         yield return new WaitForSeconds(explosionClip.length - 18f);
-        pumpingStationSource.Stop();
-        malfunctioningDoorSource.Stop();
+        pumpingStationVRSource.DearVRStop();
+        malfunctioningDoorVRSource.DearVRStop();
         audioMixer.SetFloat("DesertAmbience_Vol", -80f);
         yield return new WaitForSeconds(16f);
         StartCoroutine(audioController.ReduceMasterCutOff(2f));
@@ -83,9 +96,9 @@ public class Explosion : MonoBehaviour
         PlayOneShotWithVerb(playerClip);
         yield return new WaitForSeconds(playerClip.length);
         saveAndLoadPumpingStation.SavePumpingStation();
-        StartCoroutine(tannoyOne.Sequence());
-        StartCoroutine(tannoyTwo.Sequence());
-        StartCoroutine(tannoyThree.Sequence());
+        // StartCoroutine(tannoyOne.Sequence());
+        // StartCoroutine(tannoyTwo.Sequence());
+        // StartCoroutine(tannoyThree.Sequence());
         audioMixer.SetFloat("Footsteps_Vol", 0f);
         controls.inCutscene = false;
         controls.canZoom = true;

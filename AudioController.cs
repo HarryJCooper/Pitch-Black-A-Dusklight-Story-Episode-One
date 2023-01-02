@@ -15,6 +15,10 @@ public class AudioController : MonoBehaviour
     [SerializeField] AudioClip combatMusicClip, stealthMusicClip, menuMusicClip;
     [SerializeField] DarkVsLight darkVsLight;
 
+    public void SetParameter(string exposedParameter, float newValue){
+        audioMixer.SetFloat(exposedParameter, newValue);
+    }
+
     void IncreaseLowpassForPause(){
         if (pauseLowpass < 22000){
             pauseLowpass += 100;
@@ -84,7 +88,7 @@ public class AudioController : MonoBehaviour
     }
 
     public void SetVolumeToNothing(string m_exposedParameter){ audioMixer.SetFloat(m_exposedParameter, -80f);}
-    public void SetVolumeToZero(string m_exposedParameter){ audioMixer.SetFloat(m_exposedParameter, 0f);}
+    public void SetVolumeToZero(string m_exposedParameter){ audioMixer.SetFloat(m_exposedParameter, 5f);}
 
     public void SetCutOffToZero(){
         lowpass = 0;
@@ -129,6 +133,7 @@ public class AudioController : MonoBehaviour
             musicSource.volume = volume;
         } else if (m_musicType == "menu"){
             musicSource.clip = menuMusicClip;
+            musicSource.volume = volume;
         }
         musicSource.Play();
     }

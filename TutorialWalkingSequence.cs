@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.UI;
+using DearVR;
 
 public class TutorialWalkingSequence : SequenceBase
 {
@@ -11,6 +13,7 @@ public class TutorialWalkingSequence : SequenceBase
     rotateMobileClip0, rotateComputerClip0, rotateMobileClip1, rotateComputerClip1, successClip, squeakyToyClip, toyCarClip, trainClip;
     [SerializeField] private AudioClip[] motherClips, rattleClips, playerClips, playerFootstepClips;
     [SerializeField] AudioSource playerSource, motherSource, protagReverbSource, toySource, trainSource;
+    DearVRSource motherVRSource, protagReverbVRSource, toyVRSource, trainVRSource;
     [SerializeField] AudioSource[] radioSources, rumbleSources;
     bool sequenceFinished, motherTalking = true, walk;
     [SerializeField] int i = 0;
@@ -24,15 +27,34 @@ public class TutorialWalkingSequence : SequenceBase
     [SerializeField] AmbienceRepeater ambienceRepeater;
     [SerializeField] GameObject walkingTutorialWalls, stealthTutorialWalls, combatTutorialWalls;
     [SerializeField] float waitTime;
+    [SerializeField] string[] mobileWords, mobileWordsTwo, computerWords, computerWordsTwo;
+    [SerializeField] Text instructionText;
+    [SerializeField] EnemyFootsteps motherEnemyFootsteps;
 
-    //     INT. HOUSE – DAY 
+    string[] words;
+
+    // INT. HOUSE – DAY 
     // Player is subject to a series of tutorials that revolve around the protagonist’s early life. The first tutorial is a simple walking tutorial whereby the protagonist is a baby being directed by his mother. The nursery rhyme fades in for 3 seconds ish. 
     // The protagonist’s mother is talking to the protag in a usual motherly tone. At first, the baby protag is in the cot; rattle sounds and mobile movement, and a nursery theme tune (dark) can be heard. However, every so often, the mother exhibits signs of instability and mental fracture (has to be discreet, can’t be too scary) 
     // *All tutorials finish with the sound of children laughing in distance*
     // *take all whimper lines with a normal version too*
 
+    IEnumerator WriteSentence(){
+        foreach (string word in words){
+            instructionText.text = instructionText.text += (word + " ");
+            yield return new WaitForSeconds(0.3f);
+        }
+        yield break;
+    }
+
     void Awake(){
+        instructionText.text = "";
         active = 0;
+        motherVRSource = motherSource.GetComponent<DearVRSource>();
+        protagReverbVRSource = protagReverbSource.GetComponent<DearVRSource>();
+        toyVRSource = toySource.GetComponent<DearVRSource>();
+        trainVRSource = trainSource.GetComponent<DearVRSource>();
+        pBFootstepSystem.canRotate = false;
     }
 
     void Update(){
@@ -67,14 +89,14 @@ public class TutorialWalkingSequence : SequenceBase
 
     IEnumerator PlaySqueakyToyClip(){
         toySource.transform.position = player.position -= new Vector3(0, -0.5f, 0);
-        toySource.PlayOneShot(squeakyToyClip);
+        toyVRSource.DearVRPlayOneShot(squeakyToyClip);
         yield return new WaitForSeconds(squeakyToyClip.length);
         if (!playerSource.isPlaying) PlayOneShotWithVerb(playerClips[Random.Range(0, playerClips.Length)]);
     }
 
     IEnumerator PlayToyCarClip(){
         toySource.transform.position = player.position -= new Vector3(0, -0.5f, 0);
-        toySource.PlayOneShot(toyCarClip);
+        toyVRSource.DearVRPlayOneShot(toyCarClip);
         moveToyCar = true;
         yield return new WaitForSeconds(toyCarClip.length/2);
         if (!playerSource.isPlaying) PlayOneShotWithVerb(playerClips[Random.Range(0, playerClips.Length)]);
@@ -87,8 +109,16 @@ public class TutorialWalkingSequence : SequenceBase
         if (finished == 1) yield break;
         trainSource.transform.position = new Vector3(0, 0.3f, -70);
         moveTrain = true;
-        trainSource.PlayOneShot(trainClip);
-        foreach (AudioSource rumbleSource in rumbleSources) rumbleSource.Play();
+        trainVRSource.DearVRPlayOneShot(trainClip);
+        foreach (AudioSource rumbleSource in rumbleSources){
+            DearVRSource rumbleVRSource = rumbleSource.GetComponent<DearVRSource>();
+            if (rumbleVRSource != null){
+                rumbleVRSource.performanceMode = true;
+                rumbleVRSource.DearVRPlay();    
+            } else {
+                rumbleSource.Play();
+            }
+        } 
         yield return new WaitForSeconds(3f);
         if (!playerSource.isPlaying) PlayOneShotWithVerb(playerClips[Random.Range(0, playerClips.Length)]);
         StartCoroutine(StartTrainRumble());
@@ -96,7 +126,7 @@ public class TutorialWalkingSequence : SequenceBase
 
     void PlayOneShotWithVerb(AudioClip clip){
         playerSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip);
+        protagReverbVRSource.DearVRPlayOneShot(clip);
     }
 
     void Setup(){
@@ -124,10 +154,11 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator StartRadioSources(){
-        foreach (AudioSource source in radioSources){
-            source.loop = true;
-            source.clip = nurseryRhyme;
-            if(!source.isPlaying) source.Play();
+        foreach (AudioSource audioSource in radioSources){
+            audioSource.loop = true;
+            audioSource.clip = nurseryRhyme;
+            DearVRSource audioVRSource = audioSource.GetComponent<DearVRSource>();
+            if(!audioSource.isPlaying) audioVRSource.DearVRPlay();
             yield return new WaitForSeconds(0.005f);
         }
         yield break;
@@ -145,7 +176,7 @@ public class TutorialWalkingSequence : SequenceBase
         yield return new WaitForSeconds(12f);
         // Mother 
         // Wow, look how big you’re getting. You’re gonna grow up to be something special one day. Maybe, just maybe, you’ll leave this wicked city. *gasp* maybe… just maybe, you’ll fix our minds… 
-        motherSource.PlayOneShot(motherClips[0]);
+        motherVRSource.DearVRPlayOneShot(motherClips[0]);
         yield return new WaitForSeconds(motherClips[0].length - 3f);
         playerSource.PlayOneShot(eerieDroneClipShort, 0.2f);
         yield return new WaitForSeconds(3f);
@@ -159,7 +190,13 @@ public class TutorialWalkingSequence : SequenceBase
         // The nursery tune dips in pitch ever so slightly, like the slowing down of a record, before returning to normal. The mother then quickly picks up baby protag, puts him on the floor and runs to other side of the room. The source of the music becomes more localisable. The mother taps her thigh throughout. 
         // Mother
         // Heeey, come on little boy. press forward.
-        motherSource.PlayOneShot(motherClips[1]);
+        if (controls.mobile){
+            words = mobileWords;
+        } else {
+            words = computerWords;
+        }
+        StartCoroutine(WriteSentence());
+        motherVRSource.DearVRPlayOneShot(motherClips[1]);
         yield return new WaitForSeconds(motherClips[1].length);
         StartCoroutine(WalkOne());
     }
@@ -176,7 +213,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator LoopOne(){
         walk = false;
         i = Random.Range(0, rattleClips.Length);
-        motherSource.PlayOneShot(rattleClips[i]);
+        motherVRSource.DearVRPlayOneShot(rattleClips[i]);
         yield return new WaitForSeconds(rattleClips[i].length);
         if (Vector3.Distance(motherSource.transform.position, player.transform.position) < maxDistanceFromMother){
             StartCoroutine(SequenceTwo());
@@ -186,11 +223,12 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator SequenceTwo(){
+        instructionText.text = "";
         motherTalking = true;
         motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         // Mother
         // This way sweety, walk forward. Really think about it. You know how to walk forward; you’ve done it a thousand times already.
-        motherSource.PlayOneShot(motherClips[2]);
+        motherVRSource.DearVRPlayOneShot(motherClips[2]);
         yield return new WaitForSeconds(motherClips[2].length);
         PlayOneShotWithVerb(playerClips[4]);
         StartCoroutine(WalkTwo());
@@ -208,7 +246,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator LoopTwo(){
         walk = false;
         i = Random.Range(0, rattleClips.Length);
-        motherSource.PlayOneShot(rattleClips[i]);
+        motherVRSource.DearVRPlayOneShot(rattleClips[i]);
         yield return new WaitForSeconds(rattleClips[i].length);
         if (Vector3.Distance(motherSource.transform.position, player.transform.position) < maxDistanceFromMother){
             StartCoroutine(SequenceThree());
@@ -222,7 +260,7 @@ public class TutorialWalkingSequence : SequenceBase
         motherTalking = true;
          // Mother 
         // *Slight whimper* Come on baby. 
-        motherSource.PlayOneShot(motherClips[3]);
+        motherVRSource.DearVRPlayOneShot(motherClips[3]);
         yield return new WaitForSeconds(motherClips[3].length);
         StartCoroutine(WalkThree());
     }
@@ -240,7 +278,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator LoopThree(){
         walk = false;
         i = Random.Range(0, rattleClips.Length);
-        motherSource.PlayOneShot(rattleClips[i]);
+        motherVRSource.DearVRPlayOneShot(rattleClips[i]);
         yield return new WaitForSeconds(rattleClips[i].length);
         if (Vector3.Distance(motherSource.transform.position, player.transform.position) < maxDistanceFromMother){
             StartCoroutine(SequenceFour());
@@ -256,7 +294,7 @@ public class TutorialWalkingSequence : SequenceBase
         // Mother
         // COME ON, Walk towards me, it’s easy… 
         playerSource.PlayOneShot(eerieDroneClipShort, 0.2f);
-        motherSource.PlayOneShot(motherClips[4]);
+        motherVRSource.DearVRPlayOneShot(motherClips[4]);
         yield return new WaitForSeconds(motherClips[4].length);
         StartCoroutine(WalkFour());
     }
@@ -274,7 +312,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator LoopFour(){
         walk = false;
         i = Random.Range(0, rattleClips.Length);
-        motherSource.PlayOneShot(rattleClips[i]);
+        motherVRSource.DearVRPlayOneShot(rattleClips[i]);
         yield return new WaitForSeconds(rattleClips[i].length);
         if (Vector3.Distance(motherSource.transform.position, player.transform.position) < maxDistanceFromMother){
             StartCoroutine(SequenceSix());
@@ -284,12 +322,20 @@ public class TutorialWalkingSequence : SequenceBase
     }
         
     IEnumerator SequenceSix(){
+        motherEnemyFootsteps.maxDist = 5f;
+        pBFootstepSystem.canRotate = true;
         motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
         // The mother now walks around the house. The route is simple and mother explains that left and right rotate the protag. 
         // Mother
         // Here sweety, look, you can press left to turn left. And now the other way… thaaaat’s it. 
-        motherSource.PlayOneShot(motherClips[5]);
+        if (controls.mobile){
+            words = mobileWordsTwo;
+        } else {
+            words = computerWordsTwo;
+        }
+        StartCoroutine(WriteSentence());
+        motherVRSource.DearVRPlayOneShot(motherClips[5]);
         yield return new WaitForSeconds(motherClips[5].length);
         StartCoroutine(WalkSix());
     }
@@ -308,7 +354,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator LoopSix(){
         walk = false;
         i = Random.Range(0, rattleClips.Length);
-        motherSource.PlayOneShot(rattleClips[i]);
+        motherVRSource.DearVRPlayOneShot(rattleClips[i]);
         yield return new WaitForSeconds(rattleClips[i].length);
         if (Vector3.Distance(motherSource.transform.position, player.transform.position) < maxDistanceFromMother){
             StartCoroutine(SequenceSeven());
@@ -318,12 +364,13 @@ public class TutorialWalkingSequence : SequenceBase
     }
 
     IEnumerator SequenceSeven(){
+        instructionText.text = "";
         motherSource.transform.position = Vector3.MoveTowards(motherSource.transform.position, playerSource.transform.position, 4f);
         motherTalking = true;
         // Mother
         // Remember how to rotate? We’ve been through this, press left or right to turn and center my voice and then walk straight towards me.  
         // The player then walks towards mother and she picks up the baby protag, congratulating him. 
-        motherSource.PlayOneShot(motherClips[6]);
+        motherVRSource.DearVRPlayOneShot(motherClips[6]);
         yield return new WaitForSeconds(motherClips[6].length);
         PlayOneShotWithVerb(playerClips[6]);
         StartCoroutine(WalkSeven());
@@ -342,7 +389,7 @@ public class TutorialWalkingSequence : SequenceBase
     IEnumerator LoopSeven(){
         walk = false;
         i = Random.Range(0, rattleClips.Length);
-        motherSource.PlayOneShot(rattleClips[i]);
+        motherVRSource.DearVRPlayOneShot(rattleClips[i]);
         yield return new WaitForSeconds(rattleClips[i].length);
         if (Vector3.Distance(motherSource.transform.position, player.transform.position) < maxDistanceFromMother){
             StartCoroutine(SequenceEight());
@@ -356,14 +403,14 @@ public class TutorialWalkingSequence : SequenceBase
         motherTalking = true;
         // Mother
         // Well done honey, remember walking isn’t always as easy as you might think, just be patient and use those little ears of yours, you’ll be fine. 
-        motherSource.PlayOneShot(motherClips[7]);
+        motherVRSource.DearVRPlayOneShot(motherClips[7]);
         yield return new WaitForSeconds(motherClips[7].length);
 
         // The mother says her closing line by leaning into a cry or whimper. The whole line is said with uncertainty and sorrow. A subtle, eerie drone note foreshadows the dialogue. 
         // Mother
         // We’ll all be okay.   
         playerSource.PlayOneShot(eerieDroneClip);
-        motherSource.PlayOneShot(motherClips[8]);
+        motherVRSource.DearVRPlayOneShot(motherClips[8]);
         yield return new WaitForSeconds(motherClips[8].length);
         StartCoroutine(Outro());
     }
@@ -373,7 +420,7 @@ public class TutorialWalkingSequence : SequenceBase
 
     IEnumerator Outro(){
         StartCoroutine(audioController.ReduceMasterCutOff(7.5f));
-        yield return new WaitForSeconds(7.5f);
+        yield return new WaitForSeconds(12f);
         audioController.SetCutOffToZero();
         yield return new WaitForSeconds(2f);
         ambienceRepeater.StopAllSources();

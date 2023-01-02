@@ -53,6 +53,7 @@ public class FieldOfView : MonoBehaviour
         OccludedObject occludedObject = target.GetComponent<OccludedObject>() ?? null;
         if (occludedObject){
             OcclusionObject occlusionObject = hit.transform.gameObject.GetComponent<OcclusionObject>();
+            if (hit.transform.gameObject.GetComponent<OcclusionObject>() == null) return;
             float frequencyReduction = occlusionObject.frequencyReduction;
             float volumeReduction = occlusionObject.volumeReduction * hits.Length;
             occludedObject.occluded = true;
@@ -92,8 +93,7 @@ public class FieldOfView : MonoBehaviour
             float dstToTarget = Vector3.Distance(transform.position, target.position);
             // CHECKS TO SEE IF OCCLUDED BY OBSTACLE
             hits = Physics.RaycastAll(transform.position, dirToTarget, dstToTarget, obstacleMask, QueryTriggerInteraction.Ignore);
-            foreach (RaycastHit hit in hits) SetOcclusion(hit, target);
-
+            foreach (RaycastHit hit in hits) if (hit.collider.gameObject.activeInHierarchy) SetOcclusion(hit, target);
             ChangeAfterFocus changeAfterFocus = target.gameObject.GetComponent<ChangeAfterFocus>() ?? null;
             if (changeAfterFocus) CheckIfVisible(target, dirToTarget, dstToTarget);
             // IF OBSTACLE ISNT IN THE WAY REMOVE OCCLUSION AND MARK FALSE

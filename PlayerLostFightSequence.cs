@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using DearVR;
 
 public class PlayerLostFightSequence : SequenceBase
 {
     [SerializeField] AudioSource protagSource, protagActionSource, protagReverbSource, guardSource;
+    DearVRSource protagReverbVRSource, guardVRSource;
     [SerializeField] AudioSource[] desertAmbienceSources;
     [SerializeField] AudioMixer audioMixer;
     [SerializeField] TurnOffOnEnter tannoyOne, tannoyTwo, tannoyThree;
@@ -24,18 +26,29 @@ public class PlayerLostFightSequence : SequenceBase
     float adjuster;
     [SerializeField] GameObject doorObject, changeFootstepsObject, boundaryObject;
 
+    void Start(){
+        protagReverbVRSource = protagReverbSource.GetComponent<DearVRSource>();
+        protagReverbVRSource.performanceMode = true;
+    }
+
     void PlayOneShotWithVerb(AudioClip clip){
         protagSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip, 0.4f);
+        protagReverbSource.volume = 0.4f;
+        protagReverbVRSource.DearVRPlayOneShot(clip);
     }
 
     void FixedUpdate(){
         if (guardWalksAway) guardSource.gameObject.transform.position = Vector3.MoveTowards(guardSource.gameObject.transform.position, protagSource.gameObject.transform.position, -0.1f); 
     }
 
+    public void StartSequence(){
+        StartCoroutine(Sequence());
+    }
+
     public override IEnumerator Sequence(){
         if (finished == 0){
             if (active == 1){
+                guardVRSource = guardSource.GetComponent<DearVRSource>();
                 boundaryObject.SetActive(false);
                 darkVsLight.playerDarkness += 1;
                 controls.inCutscene = true;
@@ -57,7 +70,7 @@ public class PlayerLostFightSequence : SequenceBase
                 // The audio fades back in and the guard speaks to the protag. The protag is now in a holding cell. 
                 // Guard 
                 // Nightlanders - your leader talks frequently of being trapped - Look up the definition of irony in your next life. 
-                guardSource.PlayOneShot(guardClips[0]);
+                guardVRSource.DearVRPlayOneShot(guardClips[0]);
                 yield return new WaitForSeconds(guardClips[0].length);
 
                 // Protag
@@ -67,9 +80,9 @@ public class PlayerLostFightSequence : SequenceBase
 
                 // Guard
                 // Enjoy your stay in the holding cell… rebel. Patrol mode initiated. *sigh of relief*
-                guardSource.PlayOneShot(guardClips[1]); 
+                guardVRSource.DearVRPlayOneShot(guardClips[1]); 
                 yield return new WaitForSeconds(guardClips[1].length);
-                guardSource.PlayOneShot(batonClip);
+                guardVRSource.DearVRPlayOneShot(batonClip);
                 guardWalksAway = true;
                 // The guard laughs as he walks away. He also clangs his baton on metal bars to signify the protag is in a holding a cell. If the player chose to fight (i.e., engaged the guard or was caught on foot) then a mental flashback occurs around twenty seconds in. 
                 // Protag 
@@ -91,9 +104,9 @@ public class PlayerLostFightSequence : SequenceBase
                 yield return new WaitForSeconds(protagClips[2].length);
                 protagActionSource.PlayOneShot(explosionClip);
                 yield return new WaitForSeconds(explosionClip.length - 10.5f);
-                StartCoroutine(tannoyOne.Sequence());
-                StartCoroutine(tannoyTwo.Sequence());
-                StartCoroutine(tannoyThree.Sequence());
+                // StartCoroutine(tannoyOne.Sequence());
+                // StartCoroutine(tannoyTwo.Sequence());
+                // StartCoroutine(tannoyThree.Sequence());
                 doorObject.SetActive(false);
                 pBFootstepSystem.canRotate = true;
                 controls.inCutscene = false;

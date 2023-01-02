@@ -1,12 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DearVR;
 
 public class TrappedWorkerSequence : MonoBehaviour
 {
     public int active = 1, triggered = 0, finished = 0;
-    public AudioClip cutsceneEnterClip, cutsceneExitClip;
-    [SerializeField] AudioSource protagSource, protagReverbSource, trappedWorkerSource;
+    public AudioClip cutsceneEnterClip, cutsceneExitClip, charlieOverlayClip;
+    [SerializeField] AudioSource protagSource, protagReverbSource, protagActionSource, trappedWorkerSource;
+    DearVRSource protagReverbVRSource, trappedWorkerVRSource;
     [SerializeField] AudioClip[] protagClips, trappedWorkerClips, trappedWorkerLoopClips;
     [SerializeField] DecisionPrompt decisionPrompt;
     [SerializeField] SavedWorkerSequence savedWorkerSequence;
@@ -24,10 +26,10 @@ public class TrappedWorkerSequence : MonoBehaviour
     public void Update(){
         if (isRunning && triggered == 0){
             distanceFromPlayer = Vector3.Distance(protagSource.transform.position, trappedWorkerSource.transform.position);
-            if (distanceFromPlayer < maxDistanceFromPlayer){
+            if (distanceFromPlayer < maxDistanceFromPlayer || ((trappedWorkerSource.transform.position.z - protagSource.transform.position.z) < 5)){
                 triggered = 1;
                 StartCoroutine(Sequence());
-            } 
+            }
         } 
     }
 
@@ -39,14 +41,23 @@ public class TrappedWorkerSequence : MonoBehaviour
 
     void PlayOneShotWithVerb(AudioClip clip){
         protagSource.PlayOneShot(clip);
-        protagReverbSource.PlayOneShot(clip, 0.4f);
+        protagReverbSource.volume = 0.4f;
+        protagReverbVRSource.DearVRPlayOneShot(clip);
     }
 
-    void Awake(){
+    void Start(){
         active = 1;
+        protagReverbVRSource = protagReverbSource.GetComponent<DearVRSource>();
+        trappedWorkerVRSource = trappedWorkerSource.GetComponent<DearVRSource>();
+        protagReverbVRSource.performanceMode = true;
+        trappedWorkerVRSource.performanceMode = true;
     }
 
     public IEnumerator Sequence(){
+        protagReverbVRSource = protagReverbSource.GetComponent<DearVRSource>();
+        trappedWorkerVRSource = trappedWorkerSource.GetComponent<DearVRSource>();
+        protagReverbVRSource.performanceMode = true;
+        trappedWorkerVRSource.performanceMode = true;
         if (!hasStartedRepeater){
             hasStartedRepeater = true;
             StartCoroutine(collapseRepeater.ambienceCoroutine); 
@@ -55,18 +66,21 @@ public class TrappedWorkerSequence : MonoBehaviour
         if (finished == 0 && active == 1){
             if (triggered == 1){
                 finished = 1;
+                protagSource.transform.LookAt(trappedWorkerSource.transform.position);
                 pBFootstepSystem.canRotate = false;
                 controls.inCutscene = true;
+                protagActionSource.PlayOneShot(cutsceneEnterClip);
+                yield return new WaitForSeconds(cutsceneEnterClip.length);
                 turnOnGoo.TurnOffGooVolumeController();
                 // Protag 
                 // Don’t have time, I need to find those docs..
                 PlayOneShotWithVerb(protagClips[0]);
                 yield return new WaitForSeconds(protagClips[0].length);
 
-                trappedWorkerSource.Stop();
+                trappedWorkerVRSource.DearVRStop();
                 // Factory Worker
                 // Please! 
-                trappedWorkerSource.PlayOneShot(trappedWorkerClips[0]);
+                trappedWorkerVRSource.DearVRPlayOneShot(trappedWorkerClips[0]);
                 yield return new WaitForSeconds(trappedWorkerClips[0].length);
 
                 // Protag 
@@ -76,16 +90,19 @@ public class TrappedWorkerSequence : MonoBehaviour
 
                 // Factory Worker
                 // Gotta move to me, then we can get out of here.
-                trappedWorkerSource.PlayOneShot(trappedWorkerClips[1]);
-                yield return new WaitForSeconds(trappedWorkerClips[1].length);
+                protagActionSource.PlayOneShot(charlieOverlayClip);
+                trappedWorkerVRSource.DearVRPlayOneShot(trappedWorkerClips[1]);
                 decisionPrompt.lightOrDarkDecision = 1;
                 StartCoroutine(decisionPrompt.DecisionLoop());
+                StartCoroutine(decisionPrompt.DecisionLoopTwo());
                 StartCoroutine(CheckDecisionLoop());
             } else {
                 if (triggered == 1) yield break;
                 if (trappedWorkerSource.gameObject.activeSelf){
                     trappedWorkerLoopClipsInt = RandomNumberGen();
-                    trappedWorkerSource.PlayOneShot(trappedWorkerLoopClips[trappedWorkerLoopClipsInt]);
+                    if (!trappedWorkerSource.isPlaying){
+                        trappedWorkerVRSource.DearVRPlayOneShot(trappedWorkerLoopClips[trappedWorkerLoopClipsInt]);
+                    }
                     yield return new WaitForSeconds(15f); 
                     StartCoroutine(Sequence());
                     yield break;

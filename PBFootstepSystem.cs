@@ -17,12 +17,14 @@ public class PBFootstepSystem : MonoBehaviour
     [SerializeField] Controls controls;
     bool initialFootstepAllow;
     int layerMask, footstepInt;
+    float babyRotationTimer;
 
     void Start(){
         fWallDist = bWallDist = 5;
         controls = GameObject.Find("Controls").GetComponent<Controls>();
         layerMask = 1 << 12;
         layerMask = ~layerMask;
+        babyRotationTimer = Random.Range(0.4f, 0.6f);
     }
 
     void CheckIfCanMove(){
@@ -34,9 +36,14 @@ public class PBFootstepSystem : MonoBehaviour
     }
 
     void IncreaseRotationTimer(){
-        if (rotationTimer > 0.60f){       
+        if (rotationTimer > 0.60f && !isBaby){       
             footstepSource.PlayOneShot(footstepClips[Random.Range(0, footstepClips.Length)], Random.Range(0.8f, 1f));
             rotationTimer = 0;
+        }
+        if (rotationTimer > babyRotationTimer && isBaby){       
+            footstepSource.PlayOneShot(footstepClips[Random.Range(0, footstepClips.Length)], Random.Range(0.8f, 1f));
+            rotationTimer = 0;
+            babyRotationTimer = Random.Range(0.4f, 0.6f);
         }
         if (controls.turnRight && !controls.moveForward && !controls.moveBackward) {rotationTimer += Time.deltaTime; return;}
         if (controls.turnLeft && !controls.moveForward && !controls.moveBackward) {rotationTimer += Time.deltaTime; return;}
@@ -121,7 +128,7 @@ public class PBFootstepSystem : MonoBehaviour
         if (walkDist > maxDist && walkDist < (maxDist + 20)){
             footstepInt = RandomNumberGen();
             footstepSource.PlayOneShot(footstepClips[footstepInt], Random.Range(0.8f, 1f));
-            if (isBaby) maxDist = Random.Range(50f, 70f);
+            if (isBaby) maxDist = Random.Range(40f, 75f);
             walkDist = 0;
             recentTransform = transform.position;
         }

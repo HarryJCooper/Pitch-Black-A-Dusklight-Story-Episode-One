@@ -9,11 +9,11 @@ public class Controls : MonoBehaviour
     public bool canZoom, tap, doubleTap, swipeLeft, swipeRight, swipeUp, swipeDown;
     public bool currentlyPaused, mobile, computer, canPause;
     private Vector2 swipeDelta, startTouch;
-    private float lastTapTime, lastRightTime, lastLeftTime, leftTime, rightTime;
+    private float lastTapTime, lastRightTime, lastLeftTime, lastSpaceTime, leftTime, rightTime, spaceTime;
     public float pauseTimer;
 
     // GENERAL MOVEMENT
-    public bool doubleTapRight, doubleTapLeft, turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching, notMoving;
+    public bool doubleTapRight, doubleTapLeft, doubleTapSpace, turnRight, turnLeft, moveForward, moveBackward, firstMoveForward, firstMoveBackward, sprint, crouching, notMoving;
 
     // MODE
     public bool inZoom, inCombat, inStealth, inCutscene, enteredZoom, inPause, inExplore;
@@ -39,12 +39,12 @@ public class Controls : MonoBehaviour
     }
 
     void Start(){
-        // if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
-        //     || Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor){
-        //     computer = true;
-        //     mobile = false;
-        //     return;
-        // }
+        if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.WindowsPlayer
+            || Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor){
+            computer = true;
+            mobile = false;
+            return;
+        }
         computer = false;
         mobile = true;
     }
@@ -53,7 +53,7 @@ public class Controls : MonoBehaviour
         canPause = true;
     }
     void ResetControls(){
-        swipeUp = swipeDown = swipeLeft = swipeRight = tap = quickRotateLeft = quickRotateRight = doubleTapLeft = doubleTapRight 
+        swipeUp = swipeDown = swipeLeft = swipeRight = tap = quickRotateLeft = quickRotateRight = doubleTapLeft = doubleTapRight = doubleTapSpace
         = attack = parry = moveUp = moveDown = moveForward = moveBackward = turnRight = turnLeft = false;
     }
     void CheckIfInExplore(){
@@ -64,7 +64,7 @@ public class Controls : MonoBehaviour
         }
     }
     void CheckForEnter(){
-        if (doubleTap || Input.GetKeyDown(KeyCode.Space)){
+        if (doubleTap || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)){
             enter = true; return;
         } 
         enter = false;
@@ -76,21 +76,29 @@ public class Controls : MonoBehaviour
         sprint = false;
     }
     void CheckForDoubleRight(){
-        if (!Input.GetKeyDown(KeyCode.RightArrow)) return;
+        if (!Input.GetKeyDown(KeyCode.RightArrow) && !Input.GetKeyDown(KeyCode.D)) return;
         rightTime = Time.time - lastRightTime;
         if (rightTime < doubleTapDelta) doubleTapRight = true;
         lastRightTime = Time.time;
     }
     void CheckForDoubleLeft(){
-        if (!Input.GetKeyDown(KeyCode.LeftArrow)) return;
+        if (!Input.GetKeyDown(KeyCode.LeftArrow) && !Input.GetKeyDown(KeyCode.A)) return;
         leftTime = Time.time - lastLeftTime;
         if (leftTime < doubleTapDelta) doubleTapLeft = true;
         lastLeftTime = Time.time;
     }
-    void TurnRight(){ if ((joystick.Horizontal > minDirection) || Input.GetKey(KeyCode.RightArrow)) turnRight = true; else turnRight = false; }
-    void TurnLeft(){ if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow)) turnLeft = true; else turnLeft = false; }
+
+    void CheckForDoubleSpace(){
+        if (!Input.GetKeyDown(KeyCode.Space)) return;
+        spaceTime = Time.time - lastSpaceTime;
+        if (spaceTime < doubleTapDelta) doubleTapSpace = true;
+        lastSpaceTime = Time.time;
+    }
+
+    void TurnRight(){ if ((joystick.Horizontal > minDirection) || Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D)) turnRight = true; else turnRight = false; }
+    void TurnLeft(){ if ((joystick.Horizontal < -minDirection) || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A)) turnLeft = true; else turnLeft = false; }
     void MoveForward(){
-        if ((joystick.Vertical > minDirection) || Input.GetKey(KeyCode.UpArrow)){
+        if ((joystick.Vertical > minDirection) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W)){
             moveForward = true;
             firstStepCounter += Time.deltaTime;
         } else {
@@ -98,7 +106,7 @@ public class Controls : MonoBehaviour
         }
     }
     void MoveBackward(){
-        if ((joystick.Vertical < -minDirection) || Input.GetKey(KeyCode.DownArrow)){
+        if ((joystick.Vertical < -minDirection) || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S)){
             moveBackward = true;
             firstStepCounter += Time.deltaTime;
         } else {
@@ -107,7 +115,8 @@ public class Controls : MonoBehaviour
     }
     void CheckForNotMoving(){ if (!moveForward && !moveBackward) notMoving = true; else notMoving = false;}
     void CheckForFirstStep(){
-        if (!(joystick.Vertical > minDirection) && !(joystick.Vertical < -minDirection) && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow)){
+        if (!(joystick.Vertical > minDirection) && !(joystick.Vertical < -minDirection) 
+        && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.DownArrow) && !Input.GetKey(KeyCode.W) && !Input.GetKey(KeyCode.S)){
             firstStepCounter = 0;
         }
         if (firstStepCounter < 0.1 && moveForward) firstMoveForward = true; else firstMoveForward = false;
@@ -163,11 +172,11 @@ public class Controls : MonoBehaviour
     }
     void CheckForMenu(){
         if (!inMenu) return;
-        if (swipeUp || Input.GetKeyDown(KeyCode.DownArrow)){
+        if (swipeUp || Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)){
             moveDown = true; 
             return;
         }
-        if (swipeDown || Input.GetKeyDown(KeyCode.UpArrow)){
+        if (swipeDown || Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)){
             moveUp = true; 
             return;
         }
@@ -227,6 +236,7 @@ public class Controls : MonoBehaviour
         CheckForSprint();
         CheckForDoubleRight();
         CheckForDoubleLeft();
+        CheckForDoubleSpace();
         CheckForZoom();
         CheckForCombat();
         CheckForStealth();

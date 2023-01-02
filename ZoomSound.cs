@@ -18,13 +18,13 @@ public class ZoomSound : MonoBehaviour
     void ZoomAdjuster(){
         if (controls.inZoom){ // IF CURRENTLY ZOOMED
             if (adjuster < 1){
-                adjuster += 0.02f;              
+                adjuster += 0.04f;              
             } else {
                 transitioning = false;
             }
         } else {
             if (adjuster > 0){
-                adjuster -= 0.02f;
+                adjuster -= 0.04f;
             } else {
                 transitioning = false;
             } 
@@ -38,7 +38,7 @@ public class ZoomSound : MonoBehaviour
     void ZoomOut(){ playerActionSource.PlayOneShot(zoomOutClip);}
 
     IEnumerator CrackleRepeater(){
-        playerActionSource.PlayOneShot(crackleClips[Random.Range(0, crackleClips.Length)], 0.1f);
+        playerActionSource.PlayOneShot(crackleClips[Random.Range(0, crackleClips.Length)], 0.15f);
         yield return new WaitForSeconds(Random.Range(0.3f, 0.5f));
         if (controls.inZoom){
             StartCoroutine(CrackleRepeater());
@@ -48,7 +48,7 @@ public class ZoomSound : MonoBehaviour
     }
 
     IEnumerator DarkAmbiRepeater(){
-        playerSource.PlayOneShot(darknessClips[Random.Range(0, darknessClips.Length)], (darkVsLight.playerDarkness * 0.05f));
+        playerSource.PlayOneShot(darknessClips[Random.Range(0, darknessClips.Length)], (darkVsLight.playerDarkness * 0.08f));
         yield return new WaitForSeconds(2f);
         if (controls.inZoom){
             StartCoroutine(DarkAmbiRepeater());

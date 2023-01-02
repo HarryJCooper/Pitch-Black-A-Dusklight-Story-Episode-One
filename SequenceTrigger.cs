@@ -8,5 +8,6 @@ public class SequenceTrigger : SequenceBase
         if (other.gameObject.name != "Player") return;
         var script = this.transform.parent.gameObject.GetComponent(this.name.Split('_')[0]) as SequenceBase;
         if (script.active == 1) script.triggered = 1;
+        this.gameObject.SetActive(false);
     }
 }

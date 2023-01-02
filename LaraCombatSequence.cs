@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using DearVR;
 
 public class LaraCombatSequence : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class LaraCombatSequence : MonoBehaviour
     float angleToEnemy, enemyAttackSpeed, distanceFromPlayer, musicVol;
     Controls controls;
     AudioSource playerSource, enemySource;
+    DearVRSource enemyVRSource, playerVRSource;
     [SerializeField] AudioSource playerActionSource;
     bool moveTowards, moveBackAndToSide, moveToPointOne, moveToPointTwo, reachedPointOne, reachedPointTwo, enemyInRange, canParry, attacking, reduceMusic;
     public bool enteredCombat;
@@ -31,7 +33,9 @@ public class LaraCombatSequence : MonoBehaviour
 
     void Start(){
         enemySource = GetComponent<AudioSource>();
+        enemyVRSource = enemySource.GetComponent<DearVRSource>();
         playerSource = GameObject.Find("Player").GetComponent<AudioSource>();
+        playerVRSource = playerSource.GetComponent<DearVRSource>();
         audioMixer = enemySource.outputAudioMixerGroup.audioMixer;
         controls = GameObject.Find("Controls").GetComponent<Controls>();
         musicSource.loop = true;
@@ -125,7 +129,7 @@ public class LaraCombatSequence : MonoBehaviour
     }
 
     IEnumerator EnemyAttack(){ 
-        enemySource.PlayOneShot(enemyAttackClips[Random.Range(0, enemyAttackClips.Length)]);
+        enemyVRSource.DearVRPlayOneShot(enemyAttackClips[Random.Range(0, enemyAttackClips.Length)]);
         canParry = true;
         yield return new WaitForSeconds(enemyAttackSpeed);
         canParry = false;
@@ -139,8 +143,8 @@ public class LaraCombatSequence : MonoBehaviour
     // ________________ // 
 
     IEnumerator EnemyHitPlayer(){
-        enemySource.PlayOneShot(playerIsHitByAttackClips[Random.Range(0, playerIsHitByAttackClips.Length)]);
-        enemySource.PlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
+        enemyVRSource.DearVRPlayOneShot(playerIsHitByAttackClips[Random.Range(0, playerIsHitByAttackClips.Length)]);
+        enemyVRSource.DearVRPlayOneShot(laraPunchClips[Random.Range(0, laraPunchClips.Length)]);
         playerSource.Stop();
         if (playerAttackCoroutine != null) StopCoroutine(playerAttackCoroutine);
         playerHealth -= 1;
@@ -175,9 +179,9 @@ public class LaraCombatSequence : MonoBehaviour
     IEnumerator Parry(){
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
         canParry = false;
-        enemySource.Stop();
+        enemyVRSource.DearVRStop();;
         playerSource.PlayOneShot(playerParryClips[Random.Range(0, playerParryClips.Length)]);
-        enemySource.PlayOneShot(enemyBeenParriedClips[Random.Range(0, enemyBeenParriedClips.Length)]);
+        enemyVRSource.DearVRPlayOneShot(enemyBeenParriedClips[Random.Range(0, enemyBeenParriedClips.Length)]);
         AssignCoroutine("EnemyDazed");
         yield break;
     }
@@ -191,18 +195,18 @@ public class LaraCombatSequence : MonoBehaviour
 
     IEnumerator EnemyKilled(){
         yield return new WaitForSeconds(enemyIsHitByAttackClips[0].length + 0.5f);  
-        enemySource.PlayOneShot(enemyBeenKilledClip);
-        yield return new WaitForSeconds(enemyBeenKilledClip.length);
+        enemyVRSource.DearVRPlayOneShot(enemyBeenKilledClip);
+        yield return new WaitForSeconds(enemyBeenKilledClip.length - 1f);
         StartCoroutine(audioController.FadeMusic());
         darkVsLight.playerDarkness += 1;
         controls.inCombat = false;
-        controls.canZoom = true;
         playerActionSource.PlayOneShot(enterTheRingClip, 0.2f);
         yield return new WaitForSeconds(enterTheRingClip.length);
         playerActionSource.PlayOneShot(cutsceneExitClip);
         auditoryZoomSequence.CheckIfShouldStart();
         ringObject.SetActive(false);
         this.gameObject.SetActive(false);
+        controls.canPause = true;
     }
     #endregion
 
@@ -218,9 +222,9 @@ public class LaraCombatSequence : MonoBehaviour
     IEnumerator PlayerHitEnemy(){
         attackPhase += 1;
         playerSource.PlayOneShot(playerPunchClips[Random.Range(0, playerPunchClips.Length)]);
-        enemySource.Stop();
+        enemyVRSource.DearVRStop();
         if (enemyCoroutine != null) StopCoroutine(enemyCoroutine);
-        enemySource.PlayOneShot(enemyIsHitByAttackClips[Random.Range(0, enemyIsHitByAttackClips.Length)]);
+        enemyVRSource.DearVRPlayOneShot(enemyIsHitByAttackClips[Random.Range(0, enemyIsHitByAttackClips.Length)]);
         AssignCoroutine("KnockbackEnemy");
         yield break;
     }

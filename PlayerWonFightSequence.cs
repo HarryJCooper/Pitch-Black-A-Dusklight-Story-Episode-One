@@ -17,16 +17,18 @@ public class PlayerWonFightSequence : SequenceBase
                 // If the player goes onto win the fight against the guard, at any stage, the protag, out of breath, remarks before entering the station. 
                 // Protag 
                 // Can see why they only needed one guard, guy’s a beast. Fighting in the dark’ll take some getting used to… Nightlander’s cure doesn’t come without its downfalls. Let’s head in, and then get the hell out… 
-                protagSource.PlayOneShot(protagClips[0]);
-                yield return new WaitForSeconds(protagClips[0].length);
+                if (!protagSource.isPlaying){
+                    protagSource.PlayOneShot(protagClips[0]);
+                    yield return new WaitForSeconds(protagClips[0].length);
+                }
 
-                // TODO - add door shut clip
-                
-                // Player then heads through; the door shuts behind him. 
-                // Protag 
-                // Alright, gotta find the overseer’s office, straight down these stairs, then just follow the signs. 
-                protagSource.PlayOneShot(protagClips[1]);
-                yield return new WaitForSeconds(protagClips[1].length);
+                yield return new WaitForSeconds(8f);
+
+                if (!protagSource.isPlaying && protagSource.transform.position.z > 406){
+                    protagSource.PlayOneShot(protagClips[1]);
+                    yield return new WaitForSeconds(protagClips[1].length);
+                }
+
                 StartCoroutine(Finished());
             }
         }
