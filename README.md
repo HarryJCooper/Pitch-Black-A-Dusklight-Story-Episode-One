@@ -3,6 +3,7 @@ The scripts from Audio Game, Pitch Black: A Dusklight Story. This code base carr
 
 Highlights include
 - [https://github.com/HarryJCooper/Pitch-Black-A-Dusklight-Story-Episode-One/blob/master/PBFootstepSystem.cs] PBFootstepSystem.cs
+- [https://github.com/HarryJCooper/Pitch-Black-A-Dusklight-Story-Episode-One/blob/master/IncreaseSourceVolume.cs] IncreaseSourceVolume.cs
 - [https://github.com/HarryJCooper/Pitch-Black-A-Dusklight-Story-Episode-One/blob/master/GuardCombatSequence.cs] GuardCombatSequence.cs
 - [https://github.com/HarryJCooper/Pitch-Black-A-Dusklight-Story-Episode-One/blob/master/FieldOfView.cs] FieldOfView.cs
 - [https://github.com/HarryJCooper/Pitch-Black-A-Dusklight-Story-Episode-One/blob/master/AmbienceRepeater.cs] AmbienceRepeater.cs
